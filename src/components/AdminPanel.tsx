@@ -7,6 +7,7 @@ import {
 import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
 import { multiTcgSearch, type CardSearchResult } from '../services/multiTcgApi';
+import { TCG_EXPANSIONS } from '../data/tcgExpansions';
 import { apiGetAdminLogs } from '../api';
 
 export interface OrderItem {
@@ -524,12 +525,18 @@ export default function AdminPanel({
   // TCG API card search logic
   const handleCardApiSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiSearchQuery.trim()) return;
+    if (!apiSearchQuery.trim() && !newProdPulledFrom) {
+      setApiSearchError('Por favor ingresa un nombre de carta o selecciona un sobre de origen.');
+      return;
+    }
     setSearchingCards(true);
     setApiSearchError(null);
     try {
-      const result = await multiTcgSearch(apiSearchQuery, newProdGameType);
+      const result = await multiTcgSearch(apiSearchQuery, newProdGameType, newProdPulledFrom);
       setApiSearchResults(result);
+      if (result.length === 0) {
+        setApiSearchError('No se encontraron cartas con esos criterios. Intenta con otro término o sobre.');
+      }
     } catch (err) {
       setApiSearchError('Error al buscar cartas en la API. Por favor intenta de nuevo.');
       console.error(err);
@@ -1231,22 +1238,59 @@ export default function AdminPanel({
                   borderRadius: '10px'
                 }}>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--secondary)', marginBottom: '8px' }}>
-                    🔍 Importar desde Pokémon TCG API (Uniforma imágenes y datos)
+                    🔍 Buscador de Cartas Oficiales e Importación Automática
                   </label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '160px 220px 1fr auto', gap: '10px', alignItems: 'center' }}>
+                    {/* Selector de Juego */}
+                    <select
+                      value={newProdGameType}
+                      onChange={(e) => {
+                        setNewProdGameType(e.target.value);
+                        setNewProdPulledFrom('');
+                      }}
+                      style={{ ...getFormInputStyle(), padding: '10px 12px' }}
+                    >
+                      <option value="POKEMON">Pokémon TCG</option>
+                      <option value="MAGIC">Magic: The Gathering</option>
+                      <option value="YUGIOH">Yu-Gi-Oh!</option>
+                      <option value="ONEPIECE">One Piece</option>
+                      <option value="DRAGONBALL">Dragon Ball</option>
+                      <option value="BASEBALL">Béisbol</option>
+                    </select>
+
+                    {/* Selector de Sobre de Origen / Expansión */}
+                    <select
+                      value={newProdPulledFrom}
+                      onChange={(e) => {
+                        setNewProdPulledFrom(e.target.value);
+                        if (e.target.value) {
+                          setNewProdExpansion(e.target.value);
+                        }
+                      }}
+                      style={{ ...getFormInputStyle(), padding: '10px 12px' }}
+                    >
+                      <option value="">Todos los Sobres / Expansiones</option>
+                      {(TCG_EXPANSIONS[newProdGameType] || []).map((exp) => (
+                        <option key={exp} value={exp}>{exp}</option>
+                      ))}
+                    </select>
+
+                    {/* Input de Nombre */}
                     <input
                       type="text"
-                      placeholder="Buscar por nombre de carta (ej: Charizard ex, Pikachu)..."
+                      placeholder="Nombre de carta (ej: Charizard, Luffy, Pikachu, Black Lotus)..."
                       value={apiSearchQuery}
                       onChange={(e) => setApiSearchQuery(e.target.value)}
-                      style={{ ...getFormInputStyle(), flex: 1 }}
+                      style={{ ...getFormInputStyle() }}
                     />
+
+                    {/* Botón Buscar */}
                     <button
                       type="button"
                       onClick={handleCardApiSearch}
                       disabled={searchingCards}
                       className="btn btn-secondary"
-                      style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
                     >
                       {searchingCards ? (
                         <Loader2 size={16} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
@@ -1406,13 +1450,21 @@ export default function AdminPanel({
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Sobre de Origen (Pulled Set)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Scarlet & Violet: 151"
+                    <select
                       value={newProdPulledFrom}
-                      onChange={(e) => setNewProdPulledFrom(e.target.value)}
+                      onChange={(e) => {
+                        setNewProdPulledFrom(e.target.value);
+                        if (e.target.value) {
+                          setNewProdExpansion(e.target.value);
+                        }
+                      }}
                       style={getFormInputStyle()}
-                    />
+                    >
+                      <option value="">Selecciona un sobre / expansión</option>
+                      {(TCG_EXPANSIONS[newProdGameType] || []).map((exp) => (
+                        <option key={exp} value={exp}>{exp}</option>
+                      ))}
+                    </select>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Condición Física</label>
