@@ -15,13 +15,22 @@ export interface CardSearchResult {
 }
 
 // Interfaz adaptadora para múltiples TCGs
-export const multiTcgSearch = async (query: string, gameType: string): Promise<CardSearchResult[]> => {
-  if (!query) return [];
+export const multiTcgSearch = async (query: string, gameType: string, expansion?: string): Promise<CardSearchResult[]> => {
+  if (!query && !expansion) return [];
 
   try {
     switch (gameType) {
       case 'POKEMON': {
-        const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:"*${encodeURIComponent(query)}*"`);
+        let q = '';
+        if (query.trim() && expansion) {
+          q = `name:"*${encodeURIComponent(query.trim())}*" set.name:"*${encodeURIComponent(expansion)}*"`;
+        } else if (query.trim()) {
+          q = `name:"*${encodeURIComponent(query.trim())}*"`;
+        } else if (expansion) {
+          q = `set.name:"*${encodeURIComponent(expansion)}*"`;
+        }
+
+        const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${q}`);
         if (!response.ok) throw new Error('API Error (Pokémon)');
         const data = await response.json();
         return data.data.map((card: any) => ({
@@ -35,7 +44,11 @@ export const multiTcgSearch = async (query: string, gameType: string): Promise<C
       }
 
       case 'MAGIC': {
-        const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}`);
+        let searchString = query.trim();
+        if (expansion) {
+          searchString += ` set:"${expansion.toLowerCase().replace(/[^a-z0-9]/g, '')}"`;
+        }
+        const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(searchString || query)}`);
         if (!response.ok) {
           if (response.status === 404) return []; // No results found
           throw new Error('API Error (Magic)');
