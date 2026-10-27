@@ -21,23 +21,25 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
   try {
     switch (gameType) {
       case 'POKEMON': {
-        let q = '';
-        if (query.trim() && expansion) {
-          q = `name:"*${encodeURIComponent(query.trim())}*" set.name:"*${encodeURIComponent(expansion)}*"`;
-        } else if (query.trim()) {
-          q = `name:"*${encodeURIComponent(query.trim())}*"`;
-        } else if (expansion) {
-          q = `set.name:"*${encodeURIComponent(expansion)}*"`;
+        const queryTerms: string[] = [];
+        if (query.trim()) {
+          queryTerms.push(`name:"*${query.trim()}*"`);
+        }
+        if (expansion && expansion.trim()) {
+          queryTerms.push(`set.name:"*${expansion.trim()}*"`);
         }
 
-        const response = await fetch(`https://api.pokemontcg.io/v2/cards?q=${q}`);
+        const queryString = queryTerms.join(' ');
+        const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(queryString)}&pageSize=50&orderBy=-set.releaseDate`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('API Error (Pokémon)');
         const data = await response.json();
-        return data.data.map((card: any) => ({
+        return (data.data || []).map((card: any) => ({
           id: card.id,
           name: card.name,
-          images: { small: card.images.small, large: card.images.large },
-          set: { id: card.set.id, name: card.set.name },
+          images: { small: card.images?.small || '', large: card.images?.large || card.images?.small || '' },
+          set: { id: card.set?.id || 'unknown', name: card.set?.name || expansion || 'Base' },
           game_type: 'POKEMON',
           marketPrice: card.cardmarket?.prices?.averageSellPrice || 0
         }));
