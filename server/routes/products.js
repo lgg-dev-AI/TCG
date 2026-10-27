@@ -35,7 +35,7 @@ router.get('/all', authenticate, requireAdmin, async (req, res) => {
 
 // POST /api/products - Crear nuevo producto (Admin)
 router.post('/', authenticate, requireAdmin, async (req, res) => {
-  const { name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type } = req.body;
+  const { name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type, gallery_images } = req.body;
   
   if (!name || !price || !category || !image_url) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -48,9 +48,9 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
   try {
     await run(
-      `INSERT INTO products (id, name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, Number(price), category, image_url, description, Number(stock), expansion, is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON']
+      `INSERT INTO products (id, name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type, gallery_images) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, name, Number(price), category, image_url, description, Number(stock), expansion, is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', gallery_images || '[]']
     );
     await logAdminAction(req.user.email, 'Crear Producto', `Se agregó el producto "${name}" (Precio: $${price} MXN, Stock: ${stock})`);
     const newProduct = await get('SELECT * FROM products WHERE id = ?', [id]);
@@ -64,7 +64,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 // PUT /api/products/:id - Actualizar producto (Admin)
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type } = req.body;
+  const { name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type, gallery_images } = req.body;
 
   if (Number(price) <= 0) return res.status(400).json({ error: 'Precio inválido' });
   if (Number(stock) < 0) return res.status(400).json({ error: 'Stock inválido' });
@@ -75,9 +75,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     await run(
       `UPDATE products 
-       SET name=?, price=?, category=?, image_url=?, description=?, stock=?, expansion=?, is_promo=?, region=?, pulled_from=?, card_condition=?, game_type=?
+       SET name=?, price=?, category=?, image_url=?, description=?, stock=?, expansion=?, is_promo=?, region=?, pulled_from=?, card_condition=?, game_type=?, gallery_images=?
        WHERE id=?`,
-      [name, Number(price), category, image_url, description, Number(stock), expansion, is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', id]
+      [name, Number(price), category, image_url, description, Number(stock), expansion, is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', gallery_images !== undefined ? gallery_images : (existing.gallery_images || '[]'), id]
     );
     await logAdminAction(req.user.email, 'Editar Producto', `Se actualizó el producto "${name}" (ID: ${id}) - Nuevo Precio: $${price} MXN, Nuevo Stock: ${stock}`);
     const updatedProduct = await get('SELECT * FROM products WHERE id = ?', [id]);

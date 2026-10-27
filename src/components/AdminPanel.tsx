@@ -1803,6 +1803,11 @@ export default function AdminPanel({
                                   Set: {p.pulledFrom}
                                 </span>
                               )}
+                              {p.galleryImages && p.galleryImages.length > 1 && (
+                                <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', backgroundColor: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontWeight: 'bold' }}>
+                                  📸 {p.galleryImages.length} fotos
+                                </span>
+                              )}
                             </div>
                           )}
                           <br />

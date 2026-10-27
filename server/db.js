@@ -62,11 +62,12 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         pulled_from TEXT DEFAULT '',
         card_condition TEXT DEFAULT '',
         game_type TEXT DEFAULT 'POKEMON',
+        gallery_images TEXT DEFAULT '[]',
         is_active BOOLEAN DEFAULT 1
       )`);
 
       // Agregar columnas adicionales a productos de forma tolerante si ya existía la tabla
-      const productCols = ['region', 'pulled_from', 'card_condition', 'game_type'];
+      const productCols = ['region', 'pulled_from', 'card_condition', 'game_type', 'gallery_images'];
       productCols.forEach(col => {
         db.run(`ALTER TABLE products ADD COLUMN ${col} TEXT DEFAULT ''`, (err) => {
           // Silenciosamente ignorar si la columna ya existe

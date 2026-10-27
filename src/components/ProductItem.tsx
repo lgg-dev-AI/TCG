@@ -220,6 +220,29 @@ export default function ProductItem({
         </span>
       )}
 
+      {/* Badge de Fotos Reales de Integridad */}
+      {product.galleryImages && product.galleryImages.length > 1 && (
+        <span style={{
+          position: 'absolute',
+          top: '12px',
+          right: '50px',
+          background: 'rgba(6, 8, 12, 0.85)',
+          border: '1px solid rgba(52, 211, 153, 0.5)',
+          color: '#34d399',
+          fontSize: '9px',
+          fontWeight: 800,
+          padding: '2px 7px',
+          borderRadius: '10px',
+          zIndex: 10,
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px'
+        }}>
+          📸 {product.galleryImages.length} fotos
+        </span>
+      )}
+
       {/* Contenedor de la Imagen */}
       <div 
         onClick={() => onViewDetails(product)}
