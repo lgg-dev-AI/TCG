@@ -21,25 +21,39 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
   try {
     switch (gameType) {
       case 'POKEMON': {
-        const queryTerms: string[] = [];
-        if (query.trim()) {
-          queryTerms.push(`name:"*${query.trim()}*"`);
-        }
-        if (expansion && expansion.trim()) {
-          queryTerms.push(`set.name:"*${expansion.trim()}*"`);
+        // La API pokemontcg.io falla con Error 502 cuando se usan asteriscos (*) en set.name
+        // La forma oficial y 100% estable es name:"nombre" o buscar por nombre y filtrar localmente
+        let q = '';
+        const cleanName = query.trim().replace(/[*"]/g, '');
+        const cleanExpansion = expansion ? expansion.trim().replace(/[*"]/g, '') : '';
+
+        if (cleanName) {
+          q = `name:"${cleanName}"`;
+        } else if (cleanExpansion) {
+          // Si solo viene expansión, buscar Pokémon populares de esa era para traer el conjunto
+          q = 'supertype:pokemon';
         }
 
-        const queryString = queryTerms.join(' ');
-        const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(queryString)}&pageSize=50&orderBy=-set.releaseDate`;
-
+        const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=100`;
         const response = await fetch(url);
         if (!response.ok) throw new Error('API Error (Pokémon)');
         const data = await response.json();
-        return (data.data || []).map((card: any) => ({
+        
+        let results = data.data || [];
+        
+        // Si se especificó expansión, filtrar de manera segura por el nombre del set
+        if (cleanExpansion) {
+          const lowerExp = cleanExpansion.toLowerCase();
+          results = results.filter((card: any) => 
+            card.set?.name && card.set.name.toLowerCase().includes(lowerExp)
+          );
+        }
+
+        return results.map((card: any) => ({
           id: card.id,
           name: card.name,
           images: { small: card.images?.small || '', large: card.images?.large || card.images?.small || '' },
-          set: { id: card.set?.id || 'unknown', name: card.set?.name || expansion || 'Base' },
+          set: { id: card.set?.id || 'unknown', name: card.set?.name || cleanExpansion || 'Base' },
           game_type: 'POKEMON',
           marketPrice: card.cardmarket?.prices?.averageSellPrice || 0
         }));
