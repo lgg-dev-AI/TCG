@@ -52,6 +52,7 @@ const mapProductFromDB = (p: any): Product => ({
   platform: p.platform || '',
   completeness: p.completeness || '',
   isTournamentStaple: !!p.is_tournament_staple,
+  isFirstEdition: !!p.is_first_edition || !!p.isFirstEdition,
   galleryImages: p.gallery_images ? (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images) : (p.galleryImages || [])
 });
 
@@ -343,6 +344,7 @@ export default function App() {
         platform: updates.platform,
         completeness: updates.completeness,
         is_tournament_staple: updates.isTournamentStaple,
+        is_first_edition: updates.isFirstEdition,
         gallery_images: updates.galleryImages ? JSON.stringify(updates.galleryImages) : undefined
       };
       await apiUpdateProduct(productId, payload);
@@ -370,6 +372,7 @@ export default function App() {
         platform: newProduct.platform,
         completeness: newProduct.completeness,
         is_tournament_staple: newProduct.isTournamentStaple,
+        is_first_edition: newProduct.isFirstEdition,
         gallery_images: newProduct.galleryImages ? JSON.stringify(newProduct.galleryImages) : undefined
       };
       const res = await apiCreateProduct(payload);

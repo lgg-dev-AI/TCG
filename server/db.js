@@ -67,7 +67,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       )`);
 
       // Agregar columnas adicionales a productos de forma tolerante si ya existía la tabla
-      const productCols = ['region', 'pulled_from', 'card_condition', 'game_type', 'gallery_images'];
+      const productCols = ['region', 'pulled_from', 'card_condition', 'game_type', 'gallery_images', 'platform', 'completeness', 'is_tournament_staple', 'is_first_edition'];
       productCols.forEach(col => {
         db.run(`ALTER TABLE products ADD COLUMN ${col} TEXT DEFAULT ''`, (err) => {
           // Silenciosamente ignorar si la columna ya existe

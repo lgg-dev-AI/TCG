@@ -35,7 +35,11 @@ router.get('/all', authenticate, requireAdmin, async (req, res) => {
 
 // POST /api/products - Crear nuevo producto (Admin)
 router.post('/', authenticate, requireAdmin, async (req, res) => {
-  const { name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type, gallery_images } = req.body;
+  const { 
+    name, price, category, image_url, description, stock, expansion, 
+    is_promo, region, pulled_from, card_condition, game_type, gallery_images,
+    platform, completeness, is_tournament_staple, is_first_edition
+  } = req.body;
   
   if (!name || !price || !category || !image_url) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
@@ -48,9 +52,16 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
   try {
     await run(
-      `INSERT INTO products (id, name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type, gallery_images) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, Number(price), category, image_url, description, Number(stock), expansion, is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', gallery_images || '[]']
+      `INSERT INTO products (
+        id, name, price, category, image_url, description, stock, expansion, 
+        is_promo, region, pulled_from, card_condition, game_type, gallery_images,
+        platform, completeness, is_tournament_staple, is_first_edition
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, name, Number(price), category, image_url, description, Number(stock), expansion, 
+        is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', gallery_images || '[]',
+        platform || '', completeness || '', is_tournament_staple ? 1 : 0, is_first_edition ? 1 : 0
+      ]
     );
     await logAdminAction(req.user.email, 'Crear Producto', `Se agregó el producto "${name}" (Precio: $${price} MXN, Stock: ${stock})`);
     const newProduct = await get('SELECT * FROM products WHERE id = ?', [id]);
@@ -64,7 +75,11 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 // PUT /api/products/:id - Actualizar producto (Admin)
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, price, category, image_url, description, stock, expansion, is_promo, region, pulled_from, card_condition, game_type, gallery_images } = req.body;
+  const { 
+    name, price, category, image_url, description, stock, expansion, 
+    is_promo, region, pulled_from, card_condition, game_type, gallery_images,
+    platform, completeness, is_tournament_staple, is_first_edition
+  } = req.body;
 
   if (Number(price) <= 0) return res.status(400).json({ error: 'Precio inválido' });
   if (Number(stock) < 0) return res.status(400).json({ error: 'Stock inválido' });
@@ -75,9 +90,20 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     await run(
       `UPDATE products 
-       SET name=?, price=?, category=?, image_url=?, description=?, stock=?, expansion=?, is_promo=?, region=?, pulled_from=?, card_condition=?, game_type=?, gallery_images=?
+       SET name=?, price=?, category=?, image_url=?, description=?, stock=?, expansion=?, 
+           is_promo=?, region=?, pulled_from=?, card_condition=?, game_type=?, gallery_images=?,
+           platform=?, completeness=?, is_tournament_staple=?, is_first_edition=?
        WHERE id=?`,
-      [name, Number(price), category, image_url, description, Number(stock), expansion, is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', gallery_images !== undefined ? gallery_images : (existing.gallery_images || '[]'), id]
+      [
+        name, Number(price), category, image_url, description, Number(stock), expansion, 
+        is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', 
+        gallery_images !== undefined ? gallery_images : (existing.gallery_images || '[]'),
+        platform !== undefined ? platform : (existing.platform || ''),
+        completeness !== undefined ? completeness : (existing.completeness || ''),
+        is_tournament_staple !== undefined ? (is_tournament_staple ? 1 : 0) : (existing.is_tournament_staple || 0),
+        is_first_edition !== undefined ? (is_first_edition ? 1 : 0) : (existing.is_first_edition || 0),
+        id
+      ]
     );
     await logAdminAction(req.user.email, 'Editar Producto', `Se actualizó el producto "${name}" (ID: ${id}) - Nuevo Precio: $${price} MXN, Nuevo Stock: ${stock}`);
     const updatedProduct = await get('SELECT * FROM products WHERE id = ?', [id]);

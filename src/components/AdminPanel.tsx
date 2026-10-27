@@ -153,6 +153,7 @@ export default function AdminPanel({
   const [newProdPlatform, setNewProdPlatform] = useState('Nintendo Switch');
   const [newProdCompleteness, setNewProdCompleteness] = useState('CIB (Completo en Caja)');
   const [newProdIsTournamentStaple, setNewProdIsTournamentStaple] = useState(false);
+  const [newProdIsFirstEdition, setNewProdIsFirstEdition] = useState(false);
   const [newProdGalleryImages, setNewProdGalleryImages] = useState<string[]>([]); // Hasta 5 imágenes adicionales subidas por el usuario (total 6 con la portada)
 
   // Stand / Mercaditos interactive states
@@ -330,6 +331,7 @@ export default function AdminPanel({
   const [editProdPlatform, setEditProdPlatform] = useState('Nintendo Switch');
   const [editProdCompleteness, setEditProdCompleteness] = useState('CIB (Completo en Caja)');
   const [editProdIsTournamentStaple, setEditProdIsTournamentStaple] = useState(false);
+  const [editProdIsFirstEdition, setEditProdIsFirstEdition] = useState(false);
 
 
   // Helper to handle local file upload to Base64 with automatic WebP compression
@@ -420,6 +422,7 @@ export default function AdminPanel({
       platform: newProdCategory === 'videogame' ? newProdPlatform : undefined,
       completeness: newProdCategory === 'videogame' ? newProdCompleteness : undefined,
       isTournamentStaple: newProdIsTournamentStaple,
+      isFirstEdition: newProdCategory === 'single' ? newProdIsFirstEdition : false,
       galleryImages: [finalImage, ...newProdGalleryImages].filter(Boolean).slice(0, 6)
     };
 
@@ -442,6 +445,7 @@ export default function AdminPanel({
     setNewProdPlatform('Nintendo Switch');
     setNewProdCompleteness('CIB (Completo en Caja)');
     setNewProdIsTournamentStaple(false);
+    setNewProdIsFirstEdition(false);
     setNewProdGalleryImages([]);
     setApiSearchQuery('');
     setApiSearchResults([]);
@@ -525,6 +529,7 @@ export default function AdminPanel({
     setEditProdPlatform(p.platform || 'Nintendo Switch');
     setEditProdCompleteness(p.completeness || 'CIB (Completo en Caja)');
     setEditProdIsTournamentStaple(!!p.isTournamentStaple);
+    setEditProdIsFirstEdition(!!p.isFirstEdition);
   };
 
   // Save edited product
@@ -580,6 +585,7 @@ export default function AdminPanel({
       platform: editProdCategory === 'videogame' ? editProdPlatform : undefined,
       completeness: editProdCategory === 'videogame' ? editProdCompleteness : undefined,
       isTournamentStaple: editProdIsTournamentStaple,
+      isFirstEdition: editProdCategory === 'single' ? editProdIsFirstEdition : false,
       galleryImages: editingProduct.galleryImages
     });
 
@@ -1545,6 +1551,17 @@ export default function AdminPanel({
                     </select>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Edición de la Carta</label>
+                    <select
+                      value={newProdIsFirstEdition ? '1st' : 'unlimited'}
+                      onChange={(e) => setNewProdIsFirstEdition(e.target.value === '1st')}
+                      style={getFormInputStyle()}
+                    >
+                      <option value="unlimited">Ilimitada / Regular (Unlimited)</option>
+                      <option value="1st">⭐ 1ª Edición (1st Edition Stamp)</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Juego (TCG)</label>
                     <select
                       value={newProdGameType}
@@ -1905,8 +1922,13 @@ export default function AdminPanel({
                         />
                         <div style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           <span style={{ fontWeight: 600, color: 'white' }} title={p.name}>{p.name}</span>
-                          {p.category === 'single' && (p.region || p.cardCondition || p.pulledFrom) && (
+                          {p.category === 'single' && (p.region || p.cardCondition || p.pulledFrom || p.isFirstEdition) && (
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                              {p.isFirstEdition && (
+                                <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '4px', backgroundColor: 'rgba(255, 203, 5, 0.2)', color: '#ffcb05', border: '1px solid #ffcb05', fontWeight: 'bold' }}>
+                                  ⭐ 1ª Edición
+                                </span>
+                              )}
                               {p.region && (
                                 <span style={{ fontSize: '9px', padding: '1px 4px', borderRadius: '4px', backgroundColor: 'rgba(96, 165, 250, 0.15)', color: '#60a5fa', fontWeight: 'bold' }}>
                                   {p.region}
@@ -3773,6 +3795,17 @@ export default function AdminPanel({
                       <option value="LP">Lightly Played (LP - Poco Desgaste)</option>
                       <option value="MP">Moderately Played (MP - Desgaste Medio)</option>
                       <option value="HP">Heavily Played (HP - Dañada)</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Edición de la Carta</label>
+                    <select
+                      value={editProdIsFirstEdition ? '1st' : 'unlimited'}
+                      onChange={(e) => setEditProdIsFirstEdition(e.target.value === '1st')}
+                      style={getFormInputStyle()}
+                    >
+                      <option value="unlimited">Ilimitada / Regular (Unlimited)</option>
+                      <option value="1st">⭐ 1ª Edición (1st Edition Stamp)</option>
                     </select>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

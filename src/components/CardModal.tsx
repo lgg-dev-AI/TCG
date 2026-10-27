@@ -338,6 +338,21 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                 }}>
                   {product.category === 'single' ? 'Carta Suelta' : product.category === 'videogame' ? '🎮 Videojuego / Consola' : product.category === 'accessory' ? 'Accesorio' : 'Producto Sellado'}
                 </span>
+                {product.isFirstEdition && (
+                  <span style={{
+                    fontSize: '11px',
+                    color: '#ffcb05',
+                    background: 'linear-gradient(135deg, rgba(255, 203, 5, 0.2), rgba(0, 0, 0, 0.4))',
+                    border: '1.5px solid #ffcb05',
+                    padding: '3px 10px',
+                    borderRadius: '20px',
+                    fontWeight: 900,
+                    letterSpacing: '0.05em',
+                    boxShadow: '0 0 10px rgba(255, 203, 5, 0.3)'
+                  }}>
+                    ⭐ 1ª EDICIÓN
+                  </span>
+                )}
                 {isSingle && cardData?.types && cardData.types.map(t => (
                   <span key={t} className={`type-badge type-${t.toLowerCase()}`}>
                     {t}
@@ -422,13 +437,30 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               )}
 
               {/* Atributos Físicos de Carta Suelta */}
-              {isSingle && (product.region || product.cardCondition || product.pulledFrom) && (
+              {isSingle && (product.region || product.cardCondition || product.pulledFrom || product.isFirstEdition) && (
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
                   gap: '8px',
                   marginBottom: '20px'
                 }}>
+                  {product.isFirstEdition && (
+                    <span style={{
+                      fontSize: '11px',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(255, 203, 5, 0.15)',
+                      color: '#ffcb05',
+                      border: '1.5px solid #ffcb05',
+                      fontWeight: 800,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      boxShadow: '0 0 8px rgba(255, 203, 5, 0.25)'
+                    }}>
+                      ⭐ Sello 1ª Edición (First Edition)
+                    </span>
+                  )}
                   {product.region && (
                     <span style={{
                       fontSize: '11px',

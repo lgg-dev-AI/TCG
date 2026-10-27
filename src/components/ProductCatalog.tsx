@@ -137,6 +137,33 @@ export const MOCK_PRODUCTS: Product[] = [
     stock: 1,
     platform: 'Consolas / Hardware',
     completeness: 'Completo con Accesorios'
+  },
+  {
+    id: 'single_fe_1',
+    name: 'Charizard Holo (1ª Edición Stamp Vintage)',
+    price: 18500,
+    category: 'single',
+    image: 'https://images.pokemontcg.io/base1/4_hires.png',
+    description: 'Auténtica carta vintage de Charizard con sello oficial de 1ª Edición (First Edition Stamp). En estado de conservación excepcional Near Mint.',
+    stock: 1,
+    expansion: 'Base Set',
+    region: 'Inglés (USA)',
+    cardCondition: 'NM',
+    isFirstEdition: true,
+    isPromo: true
+  },
+  {
+    id: 'single_fe_2',
+    name: 'Lugia ex (1ª Edición Golden Border)',
+    price: 4999,
+    category: 'single',
+    image: 'https://images.pokemontcg.io/ex10/105_hires.png',
+    description: 'Carta icónica de Lugia con sello de 1ª Edición y borde holográfico de colección. Probada e inspeccionada bajo luz ultravioleta.',
+    stock: 2,
+    expansion: 'Unseen Forces',
+    region: 'Inglés (USA)',
+    cardCondition: 'NM',
+    isFirstEdition: true
   }
 ];
 
@@ -166,6 +193,7 @@ export default function ProductCatalog({
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedCondition, setSelectedCondition] = useState<string>('all');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
+  const [selectedEdition, setSelectedEdition] = useState<string>('all');
 
   // Estado para cartas API (Desactivado para catálogo limpio)
   const loading = false;
@@ -225,8 +253,9 @@ export default function ProductCatalog({
   const getCombinedProducts = (): Product[] => {
     let list: Product[] = [];
 
-    // Añadir productos de la base de datos (incluyendo singles registrados por el admin)
-    const filteredDB = inventory.filter(p => {
+    // Añadir productos de la base de datos (o mocks si aún no hay inventario en DB)
+    const sourceProducts = inventory.length > 0 ? inventory : MOCK_PRODUCTS;
+    const filteredDB = sourceProducts.filter(p => {
       if (selectedCategory === 'all') return true;
       if (selectedCategory === 'sealed') return p.category === 'booster_box' || p.category === 'etb' || p.category === 'blister';
       return p.category === selectedCategory;
@@ -277,6 +306,16 @@ export default function ProductCatalog({
         if (selectedRarity === 'rare') return rarity.includes('rare') || rarity.includes('holo') || rarity.includes('secret') || rarity.includes('promo');
         if (selectedRarity === 'uncommon') return rarity.includes('uncommon');
         if (selectedRarity === 'common') return rarity.includes('common');
+        return true;
+      });
+    }
+
+    // Filtrar por Edición (1ª Edición vs Ilimitada / Regular)
+    if (selectedEdition !== 'all') {
+      list = list.filter(p => {
+        if (p.category !== 'single') return true;
+        if (selectedEdition === 'first_edition') return !!p.isFirstEdition;
+        if (selectedEdition === 'unlimited') return !p.isFirstEdition;
         return true;
       });
     }
@@ -352,6 +391,7 @@ export default function ProductCatalog({
                 setSelectedRarity('all');
                 setSelectedRegion('all');
                 setSelectedCondition('all');
+                setSelectedEdition('all');
               }
             }}
             className="btn"
@@ -520,6 +560,30 @@ export default function ProductCatalog({
                     <option value="LP">Lightly Played (LP)</option>
                     <option value="MP">Moderately Played (MP)</option>
                     <option value="HP">Heavily Played (HP)</option>
+                  </select>
+                </div>
+
+                <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                    Edición de Carta:
+                  </label>
+                  <select
+                    value={selectedEdition}
+                    onChange={(e) => setSelectedEdition(e.target.value)}
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'var(--bg-body)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      color: 'white',
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="all">Todas las Ediciones</option>
+                    <option value="first_edition">⭐ Solo 1ª Edición (1st Edition)</option>
+                    <option value="unlimited">Ilimitada / Regular (Unlimited)</option>
                   </select>
                 </div>
               </>

@@ -21,6 +21,7 @@ export interface Product {
   platform?: string; // Nintendo Switch, PS5, PS4, Xbox, Retro, etc.
   completeness?: string; // CIB (Completo en Caja), Solo Cartucho/Disco, Sellado
   isTournamentStaple?: boolean; // Carta clave para torneos competitivos
+  isFirstEdition?: boolean; // 1ª Edición (1st Edition Stamp)
 }
 
 interface ProductItemProps {
@@ -178,11 +179,35 @@ export default function ProductItem({
         </span>
       )}
 
+      {/* Badge 1ª Edición (1st Edition Stamp) */}
+      {product.isFirstEdition && (
+        <span style={{
+          position: 'absolute',
+          top: product.isPromo ? '34px' : '12px',
+          left: '12px',
+          background: 'linear-gradient(135deg, #111827 0%, #1f2937 100%)',
+          border: '1.5px solid #ffcb05',
+          color: '#ffcb05',
+          fontSize: '9px',
+          fontWeight: 900,
+          padding: '2px 7px',
+          borderRadius: '6px',
+          zIndex: 11,
+          letterSpacing: '0.06em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+        }}>
+          ⭐ 1ª EDICIÓN
+        </span>
+      )}
+
       {/* Badge de Stock Bajo — Urgencia de compra */}
       {product.stock > 0 && product.stock <= 3 && (
         <span style={{
           position: 'absolute',
-          top: product.isPromo ? '34px' : '12px',
+          top: (product.isPromo && product.isFirstEdition) ? '56px' : (product.isPromo || product.isFirstEdition) ? '34px' : '12px',
           left: '12px',
           background: 'linear-gradient(135deg, #f59e0b, #b45309)',
           color: 'white',
@@ -391,9 +416,22 @@ export default function ProductItem({
             </div>
           )}
 
-          {/* Atributos de carta suelta (Idioma y Condición) */}
-          {isSingle && (product.region || product.cardCondition) && (
+          {/* Atributos de carta suelta (Idioma, Condición y Edición) */}
+          {isSingle && (product.region || product.cardCondition || product.isFirstEdition) && (
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              {product.isFirstEdition && (
+                <span style={{
+                  fontSize: '9.5px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: 'rgba(255, 203, 5, 0.15)',
+                  color: '#ffcb05',
+                  border: '1px solid rgba(255, 203, 5, 0.4)',
+                  fontWeight: 800
+                }}>
+                  ⭐ 1ª Edición
+                </span>
+              )}
               {product.region && (
                 <span style={{
                   fontSize: '9.5px',
