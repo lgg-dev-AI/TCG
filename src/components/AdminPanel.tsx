@@ -1238,26 +1238,9 @@ export default function AdminPanel({
                   borderRadius: '10px'
                 }}>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--secondary)', marginBottom: '8px' }}>
-                    🔍 Buscador de Cartas Oficiales e Importación Automática
+                    🔍 Buscador de Cartas de Pokémon TCG (Importación Automática)
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '160px 220px 1fr auto', gap: '10px', alignItems: 'center' }}>
-                    {/* Selector de Juego */}
-                    <select
-                      value={newProdGameType}
-                      onChange={(e) => {
-                        setNewProdGameType(e.target.value);
-                        setNewProdPulledFrom('');
-                      }}
-                      style={{ ...getFormInputStyle(), padding: '10px 12px' }}
-                    >
-                      <option value="POKEMON">Pokémon TCG</option>
-                      <option value="MAGIC">Magic: The Gathering</option>
-                      <option value="YUGIOH">Yu-Gi-Oh!</option>
-                      <option value="ONEPIECE">One Piece</option>
-                      <option value="DRAGONBALL">Dragon Ball</option>
-                      <option value="BASEBALL">Béisbol</option>
-                    </select>
-
+                  <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr auto', gap: '10px', alignItems: 'center' }}>
                     {/* Selector de Sobre de Origen / Expansión */}
                     <select
                       value={newProdPulledFrom}
@@ -1269,16 +1252,16 @@ export default function AdminPanel({
                       }}
                       style={{ ...getFormInputStyle(), padding: '10px 12px' }}
                     >
-                      <option value="">Todos los Sobres / Expansiones</option>
-                      {(TCG_EXPANSIONS[newProdGameType] || []).map((exp) => (
+                      <option value="">Todos los Sobres / Expansiones de Pokémon</option>
+                      {(TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
                         <option key={exp} value={exp}>{exp}</option>
                       ))}
                     </select>
 
-                    {/* Input de Nombre */}
+                    {/* Input de Nombre (Opcional si se seleccionó sobre) */}
                     <input
                       type="text"
-                      placeholder="Nombre de carta (ej: Charizard, Luffy, Pikachu, Black Lotus)..."
+                      placeholder="Nombre de carta (ej: Charizard, Pikachu...) o deja vacío para ver el sobre..."
                       value={apiSearchQuery}
                       onChange={(e) => setApiSearchQuery(e.target.value)}
                       style={{ ...getFormInputStyle() }}
@@ -1487,11 +1470,6 @@ export default function AdminPanel({
                       style={getFormInputStyle()}
                     >
                       <option value="POKEMON">Pokémon TCG</option>
-                      <option value="MAGIC">Magic: The Gathering</option>
-                      <option value="YUGIOH">Yu-Gi-Oh!</option>
-                      <option value="ONEPIECE">One Piece Card Game</option>
-                      <option value="DRAGONBALL">Dragon Ball Super</option>
-                      <option value="BASEBALL">Tarjetas de Béisbol</option>
                     </select>
                   </div>
                 </div>
