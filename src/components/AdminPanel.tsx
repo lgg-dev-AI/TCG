@@ -537,7 +537,8 @@ export default function AdminPanel({
       region: editProdCategory === 'single' ? editProdRegion : '',
       pulledFrom: editProdCategory === 'single' ? editProdPulledFrom : '',
       cardCondition: editProdCategory === 'single' ? editProdCardCondition : '',
-      gameType: editProdCategory === 'single' ? editProdGameType : 'POKEMON'
+      gameType: editProdCategory === 'single' ? editProdGameType : 'POKEMON',
+      galleryImages: editingProduct.galleryImages
     });
 
     setEditingProduct(null);
