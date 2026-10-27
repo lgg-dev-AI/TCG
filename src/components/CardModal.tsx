@@ -10,11 +10,17 @@ interface CardModalProps {
 
 export default function CardModal({ product, onClose, onAddToCart }: CardModalProps) {
   const [quantity, setQuantity] = useState(1);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
   const [foilStyle, setFoilStyle] = useState<React.CSSProperties>({});
 
   if (!product) return null;
+
+  const allImages = product.galleryImages && product.galleryImages.length > 0 
+    ? product.galleryImages 
+    : [product.pokemonCardData?.images.large || product.image];
+  const currentImage = allImages[activeImageIndex] || product.image;
 
   const isSingle = product.category === 'single';
   const cardData = product.pokemonCardData;
@@ -124,53 +130,89 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
           {/* Lado Izquierdo: Visual (Carta en 3D o producto sellado) */}
           <div style={{
             display: 'flex',
-            justifyContent: 'center',
+            flexDirection: 'column',
             alignItems: 'center',
-            perspective: '1000px',
+            gap: '14px'
           }}>
-            {isSingle ? (
-              <div 
-                className="card-3d-wrapper"
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                style={{
-                  maxWidth: '300px',
-                  width: '100%',
-                  aspectRatio: '2.5 / 3.5'
-                }}
-              >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              perspective: '1000px',
+              width: '100%'
+            }}>
+              {isSingle ? (
                 <div 
-                  className="card-3d rare-glow"
-                  ref={cardRef}
+                  className="card-3d-wrapper"
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={handleMouseLeave}
                   style={{
-                    ...tiltStyle,
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+                    maxWidth: '300px',
+                    width: '100%',
+                    aspectRatio: '2.5 / 3.5'
                   }}
                 >
-                  <img src={cardData?.images.large || product.image} alt={product.name} />
-                  <div className="card-foil-overlay" style={foilStyle} />
+                  <div 
+                    className="card-3d rare-glow"
+                    ref={cardRef}
+                    style={{
+                      ...tiltStyle,
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+                    }}
+                  >
+                    <img src={currentImage} alt={product.name} />
+                    <div className="card-foil-overlay" style={foilStyle} />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div style={{
-                maxWidth: '320px',
-                width: '100%',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                borderRadius: '12px',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  style={{
-                    width: '100%',
-                    maxHeight: '300px',
-                    objectFit: 'contain'
-                  }}
-                />
+              ) : (
+                <div style={{
+                  maxWidth: '320px',
+                  width: '100%',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img 
+                    src={currentImage} 
+                    alt={product.name} 
+                    style={{
+                      width: '100%',
+                      maxHeight: '300px',
+                      objectFit: 'contain'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Selector de Galería de Fotos (Fotos Reales de Integridad) */}
+            {allImages.length > 1 && (
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', maxWidth: '320px', padding: '4px' }}>
+                {allImages.map((imgUrl, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveImageIndex(i)}
+                    style={{
+                      width: '46px',
+                      height: '60px',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      border: activeImageIndex === i ? '2px solid var(--secondary)' : '1px solid rgba(255,255,255,0.15)',
+                      padding: 0,
+                      background: 'rgba(0,0,0,0.3)',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      opacity: activeImageIndex === i ? 1 : 0.6,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <img src={imgUrl} alt={`Vista ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
               </div>
             )}
           </div>

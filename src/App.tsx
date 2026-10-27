@@ -48,7 +48,8 @@ const mapProductFromDB = (p: any): Product => ({
   region: p.region || '',
   pulledFrom: p.pulled_from || '',
   cardCondition: p.card_condition || '',
-  gameType: p.game_type || 'POKEMON'
+  gameType: p.game_type || 'POKEMON',
+  galleryImages: p.gallery_images ? (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images) : (p.galleryImages || [])
 });
 
 // Helper for localStorage with fallback (retained for minor UI settings)
@@ -335,7 +336,8 @@ export default function App() {
         region: updates.region,
         pulled_from: updates.pulledFrom,
         card_condition: updates.cardCondition,
-        game_type: updates.gameType
+        game_type: updates.gameType,
+        gallery_images: updates.galleryImages ? JSON.stringify(updates.galleryImages) : undefined
       };
       await apiUpdateProduct(productId, payload);
       setInventory((prev) => prev.map((p) => (p.id === productId ? { ...p, ...updates } : p)));
@@ -358,7 +360,8 @@ export default function App() {
         region: newProduct.region,
         pulled_from: newProduct.pulledFrom,
         card_condition: newProduct.cardCondition,
-        game_type: newProduct.gameType
+        game_type: newProduct.gameType,
+        gallery_images: newProduct.galleryImages ? JSON.stringify(newProduct.galleryImages) : undefined
       };
       const res = await apiCreateProduct(payload);
       setInventory((prev) => [mapProductFromDB(res), ...prev]);

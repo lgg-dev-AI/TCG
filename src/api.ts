@@ -80,44 +80,91 @@ export const apiVerifyOTP = async (email: string, code: string) => {
 // PRODUCTS
 // ========================
 export const apiGetProducts = async () => {
-  const res = await fetch(`${API_BASE}/products`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/products`);
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('API /products no disponible, usando localStorage', e);
+  }
+  const local = localStorage.getItem('pokevault_standalone_products');
+  return local ? JSON.parse(local) : [];
 };
 
 export const apiGetAllProductsAdmin = async () => {
-  const res = await fetch(`${API_BASE}/products/all`, { headers: getAuthHeaders() });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/products/all`, { headers: getAuthHeaders() });
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('API /products/all no disponible, usando localStorage', e);
+  }
+  const local = localStorage.getItem('pokevault_standalone_products');
+  return local ? JSON.parse(local) : [];
 };
 
 export const apiCreateProduct = async (productData: any) => {
-  const res = await fetch(`${API_BASE}/products`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(productData)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/products`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(productData)
+    });
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('API /products (POST) no disponible, guardando en localStorage', e);
+  }
+
+  // Standalone fallback: persist to localStorage
+  const local = localStorage.getItem('pokevault_standalone_products');
+  const products = local ? JSON.parse(local) : [];
+  const created = {
+    ...productData,
+    id: 'prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+    is_active: 1
+  };
+  products.unshift(created);
+  localStorage.setItem('pokevault_standalone_products', JSON.stringify(products));
+  return created;
 };
 
 export const apiUpdateProduct = async (id: string, productData: any) => {
-  const res = await fetch(`${API_BASE}/products/${id}`, {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(productData)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/products/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(productData)
+    });
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('API /products (PUT) no disponible, actualizando en localStorage', e);
+  }
+
+  const local = localStorage.getItem('pokevault_standalone_products');
+  if (local) {
+    const products = JSON.parse(local);
+    const updated = products.map((p: any) => p.id === id ? { ...p, ...productData } : p);
+    localStorage.setItem('pokevault_standalone_products', JSON.stringify(updated));
+  }
+  return { id, ...productData };
 };
 
 export const apiDeleteProduct = async (id: string) => {
-  const res = await fetch(`${API_BASE}/products/${id}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders()
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/products/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('API /products (DELETE) no disponible, eliminando de localStorage', e);
+  }
+
+  const local = localStorage.getItem('pokevault_standalone_products');
+  if (local) {
+    const products = JSON.parse(local);
+    const filtered = products.filter((p: any) => p.id !== id);
+    localStorage.setItem('pokevault_standalone_products', JSON.stringify(filtered));
+  }
+  return { success: true };
 };
 
 // ========================

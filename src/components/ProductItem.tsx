@@ -17,6 +17,7 @@ export interface Product {
   pulledFrom?: string;
   cardCondition?: string;
   gameType?: string;
+  galleryImages?: string[];
 }
 
 interface ProductItemProps {

@@ -148,6 +148,7 @@ export default function AdminPanel({
   const [newProdPulledFrom, setNewProdPulledFrom] = useState('');
   const [newProdCardCondition, setNewProdCardCondition] = useState('NM');
   const [newProdGameType, setNewProdGameType] = useState('POKEMON');
+  const [newProdGalleryImages, setNewProdGalleryImages] = useState<string[]>([]); // Hasta 5 imágenes adicionales subidas por el usuario (total 6 con la portada)
 
   // States for TCG API card search
   const [apiSearchQuery, setApiSearchQuery] = useState('');
@@ -385,7 +386,8 @@ export default function AdminPanel({
       region: newProdCategory === 'single' ? newProdRegion : '',
       pulledFrom: newProdCategory === 'single' ? newProdPulledFrom : '',
       cardCondition: newProdCategory === 'single' ? newProdCardCondition : '',
-      gameType: newProdCategory === 'single' ? newProdGameType : 'POKEMON'
+      gameType: newProdCategory === 'single' ? newProdGameType : 'POKEMON',
+      galleryImages: [finalImage, ...newProdGalleryImages].filter(Boolean).slice(0, 6)
     };
 
     onAddInventoryItem(newProduct);
@@ -404,6 +406,7 @@ export default function AdminPanel({
     setNewProdPulledFrom('');
     setNewProdCardCondition('NM');
     setNewProdGameType('POKEMON');
+    setNewProdGalleryImages([]);
     setApiSearchQuery('');
     setApiSearchResults([]);
     setShowAddForm(false);
@@ -1601,6 +1604,96 @@ export default function AdminPanel({
                   </div>
                 </div>
               )}
+
+              {/* Galería de Fotos Reales (Hasta 6 fotos en total: Portada + 5 fotos de integridad) */}
+              <div style={{
+                marginBottom: '20px',
+                padding: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 700, color: 'white' }}>
+                    📸 Galería de Integridad del Producto (Máximo 6 fotos en total)
+                  </label>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {1 + newProdGalleryImages.length} de 6 fotos utilizadas
+                  </span>
+                </div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                  La 1ª foto es la portada oficial. Sube hasta 5 fotos reales adicionales (esquinas, reverso, bordes) para que el comprador verifique el estado exacto de la carta.
+                </p>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  {/* Foto 1: Portada Principal */}
+                  <div style={{ position: 'relative', width: '70px', height: '90px', borderRadius: '6px', border: '2px solid var(--secondary)', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <img 
+                      src={newProdCategory === 'single' ? (newProdImage || '/generic_card.png') : '/official_booster_box.png'} 
+                      alt="Portada" 
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                    />
+                    <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255, 203, 5, 0.9)', color: '#000', fontSize: '8px', fontWeight: 800, textAlign: 'center', padding: '1px' }}>
+                      1. PORTADA
+                    </span>
+                  </div>
+
+                  {/* Fotos Adicionales 2 a 6 */}
+                  {newProdGalleryImages.map((imgBase64, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: '70px', height: '90px', borderRadius: '6px', border: '1px solid var(--border-color)', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                      <img src={imgBase64} alt={`Foto ${idx + 2}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '8px', textAlign: 'center', padding: '1px' }}>
+                        {idx + 2}. FOTO REAL
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNewProdGalleryImages(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(255, 62, 62, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Botón para subir fotos extras si son menos de 5 extras */}
+                  {newProdGalleryImages.length < 5 && (
+                    <label style={{
+                      width: '70px',
+                      height: '90px',
+                      borderRadius: '6px',
+                      border: '1px dashed var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255,255,255,0.02)',
+                      transition: 'all 0.2s',
+                      gap: '4px'
+                    }}>
+                      <Upload size={16} color="var(--secondary)" />
+                      <span style={{ fontSize: '9px', color: 'var(--secondary)', textAlign: 'center', fontWeight: 600 }}>+ Subir Foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === 'string') {
+                              setNewProdGalleryImages(prev => [...prev, reader.result as string].slice(0, 5));
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
 
               {/* Fila de Detalles Adicionales (Expansión y Destacado) */}
               <div style={{
