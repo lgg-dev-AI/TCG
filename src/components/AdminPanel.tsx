@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
-import { multiTcgSearch, type CardSearchResult } from '../services/multiTcgApi';
+import { multiTcgSearch, fetchPokemonExpansionsForCard, type CardSearchResult } from '../services/multiTcgApi';
 import { TCG_EXPANSIONS } from '../data/tcgExpansions';
 import { apiGetAdminLogs } from '../api';
 
@@ -154,6 +154,26 @@ export default function AdminPanel({
   const [apiSearchResults, setApiSearchResults] = useState<CardSearchResult[]>([]);
   const [searchingCards, setSearchingCards] = useState(false);
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
+  const [dynamicExpansions, setDynamicExpansions] = useState<string[]>([]);
+  const [loadingExpansions, setLoadingExpansions] = useState(false);
+
+  // Filtrar dinámicamente las expansiones cuando se escribe el nombre de un Pokémon
+  useEffect(() => {
+    const query = apiSearchQuery.trim();
+    if (!query || query.length < 2) {
+      setDynamicExpansions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoadingExpansions(true);
+      const sets = await fetchPokemonExpansionsForCard(query);
+      setDynamicExpansions(sets);
+      setLoadingExpansions(false);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [apiSearchQuery]);
 
   // States for CSV Catalog Import
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -1240,8 +1260,8 @@ export default function AdminPanel({
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--secondary)', marginBottom: '8px' }}>
                     🔍 Buscador de Cartas de Pokémon TCG (Importación Automática)
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr auto', gap: '10px', alignItems: 'center' }}>
-                    {/* Selector de Sobre de Origen / Expansión */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr auto', gap: '10px', alignItems: 'center' }}>
+                    {/* Selector de Sobre de Origen / Expansión (Dinámico A-Z) */}
                     <select
                       value={newProdPulledFrom}
                       onChange={(e) => {
@@ -1252,8 +1272,14 @@ export default function AdminPanel({
                       }}
                       style={{ ...getFormInputStyle(), padding: '10px 12px' }}
                     >
-                      <option value="">Todos los Sobres / Expansiones de Pokémon</option>
-                      {(TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
+                      <option value="">
+                        {loadingExpansions 
+                          ? '⏳ Buscando expansiones...' 
+                          : dynamicExpansions.length > 0 
+                            ? `Expansiones con "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
+                            : 'Todas las Expansiones (A-Z)'}
+                      </option>
+                      {(dynamicExpansions.length > 0 ? dynamicExpansions : TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
                         <option key={exp} value={exp}>{exp}</option>
                       ))}
                     </select>
@@ -1443,8 +1469,8 @@ export default function AdminPanel({
                       }}
                       style={getFormInputStyle()}
                     >
-                      <option value="">Selecciona un sobre / expansión</option>
-                      {(TCG_EXPANSIONS[newProdGameType] || []).map((exp) => (
+                      <option value="">Selecciona un sobre / expansión (A-Z)</option>
+                      {(dynamicExpansions.length > 0 ? dynamicExpansions : TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
                         <option key={exp} value={exp}>{exp}</option>
                       ))}
                     </select>

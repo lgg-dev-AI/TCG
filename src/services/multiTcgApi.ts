@@ -14,6 +14,28 @@ export interface CardSearchResult {
   marketPrice?: number;
 }
 
+// Obtener las expansiones reales donde aparece un Pokémon
+export const fetchPokemonExpansionsForCard = async (pokemonName: string): Promise<string[]> => {
+  if (!pokemonName || !pokemonName.trim()) return [];
+  try {
+    const clean = pokemonName.trim().replace(/[*"]/g, '');
+    const url = `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(clean)}"&select=set&pageSize=100`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const sets = new Set<string>();
+    (data.data || []).forEach((c: any) => {
+      if (c.set && c.set.name) {
+        sets.add(c.set.name);
+      }
+    });
+    return Array.from(sets).sort((a, b) => a.localeCompare(b));
+  } catch (e) {
+    console.error('Error fetching card expansions:', e);
+    return [];
+  }
+};
+
 // Interfaz adaptadora para múltiples TCGs
 export const multiTcgSearch = async (query: string, gameType: string, expansion?: string): Promise<CardSearchResult[]> => {
   if (!query && !expansion) return [];
