@@ -563,10 +563,6 @@ export default function AdminPanel({
   // TCG API card search logic
   const handleCardApiSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiSearchQuery.trim() && !newProdPulledFrom) {
-      setApiSearchError('Por favor ingresa un nombre de carta o selecciona un sobre de origen.');
-      return;
-    }
     setSearchingCards(true);
     setApiSearchError(null);
     try {
@@ -1294,8 +1290,8 @@ export default function AdminPanel({
                         {loadingExpansions 
                           ? '⏳ Buscando expansiones...' 
                           : dynamicExpansions.length > 0 
-                            ? `Expansiones con "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
-                            : 'Todas las Expansiones (A-Z)'}
+                            ? `🌐 Todas las Expansiones de "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
+                            : '🌐 Todas las Expansiones (Todas)'}
                       </option>
                       {(dynamicExpansions.length > 0 ? dynamicExpansions : TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
                         <option key={exp} value={exp}>{exp}</option>

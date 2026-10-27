@@ -81,10 +81,8 @@ export const fetchPokemonExpansionsForCard = async (pokemonName: string): Promis
 
 // Interfaz adaptadora para múltiples TCGs con caché ultrarrápido
 export const multiTcgSearch = async (query: string, gameType: string, expansion?: string): Promise<CardSearchResult[]> => {
-  if (!query && !expansion) return [];
-
-  const cleanName = query.trim().replace(/[*"]/g, '');
-  const cleanExpansion = expansion ? expansion.trim().replace(/[*"]/g, '') : '';
+  const cleanName = (query || '').trim().replace(/[*"]/g, '');
+  const cleanExpansion = (expansion || '').trim().replace(/[*"]/g, '');
   const cacheKey = `search_${gameType}_${cleanName.toLowerCase()}_${cleanExpansion.toLowerCase()}`;
 
   const cachedResults = getCached<CardSearchResult[]>(cacheKey);
@@ -99,18 +97,20 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
 
         if (cleanName) {
           q = `name:"${cleanName}"`;
-        } else if (cleanExpansion) {
+        } else {
+          // Si no se especifica nombre de carta (o se busca todas las expansiones), traer cartas oficiales de Pokémon
           q = 'supertype:pokemon';
         }
 
-        const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=100`;
+        const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=50`;
         const response = await fetch(url);
         if (!response.ok) throw new Error(`API pokemontcg.io status ${response.status}`);
         const data = await response.json();
         
         let results = data.data || [];
         
-        // Si se especificó expansión, filtrar de manera segura por el nombre del set
+        // Si se especificó una expansión en particular, filtrar por ese sobre.
+        // Si cleanExpansion está vacío ("Todas las expansiones"), se devuelven cartas de TODAS las expansiones.
         if (cleanExpansion) {
           const lowerExp = cleanExpansion.toLowerCase();
           results = results.filter((card: any) => 
