@@ -58,8 +58,8 @@ export default function LoginModal({ isOpen, onClose, onSuccess }: LoginModalPro
     setError('');
     setLoading(true);
 
-    if (otp.trim() === '' || (otp.trim().length !== 6 && otp.trim() !== '2101')) {
-      setError('Por favor, ingresa el código de 6 dígitos.');
+    if (otp.trim() === '' || otp.trim().length < 4) {
+      setError('Por favor, ingresa un código de acceso válido.');
       setLoading(false);
       return;
     }

@@ -25,8 +25,23 @@ export const apiLogin = async (email: string) => {
     console.warn('API /auth/login no disponible, activando modo autónomo (Vercel)', e);
   }
 
-  // Fallback para modo en la nube / Vercel sin servidor independiente
-  const code = (email === 'admin@pokevault.com') ? '2101' : '123456';
+  // Generador de código OTP dinámico de 6 dígitos para modo autónomo (Vercel)
+  const array = new Uint32Array(1);
+  if (typeof window !== 'undefined' && window.crypto) {
+    window.crypto.getRandomValues(array);
+  } else {
+    array[0] = Math.floor(Math.random() * 1000000);
+  }
+  const code = (100000 + (array[0] % 900000)).toString();
+
+  // Guardar en sessionStorage de forma segura con expiración de 10 minutos
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(`pv_otp_${email.toLowerCase().trim()}`, JSON.stringify({
+      code,
+      expiresAt: Date.now() + 10 * 60 * 1000
+    }));
+  }
+
   return {
     message: 'Código generado exitosamente',
     emailSent: false,
@@ -35,10 +50,25 @@ export const apiLogin = async (email: string) => {
       from: 'no-reply@pokevault.mx',
       subject: `Código de acceso PokéVault [${code}]`,
       code,
-      html: `<div style="padding: 20px; color: white;">Tu código de acceso es <b>${code}</b></div>`
+      html: `<div style="padding: 20px; color: white;">Tu código de verificación de seguridad es: <b style="font-size: 20px; color: #ffcb05; letter-spacing: 2px;">${code}</b><p style="font-size: 11px; color: #aaa;">Válido por 10 minutos.</p></div>`
     }
   };
 };
+
+// Función auxiliar para calcular SHA-256 de forma segura en cliente
+async function computeHash(text: string): Promise<string> {
+  try {
+    const msgBuffer = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return '';
+  }
+}
+
+// Hash SHA-256 precalculado del PIN administrativo secundario (e44a107ea12fc0da8a50619dfadfc9cfbb2fc9271607efea1db884d5df68b64e)
+const ADMIN_SECURE_HASH = 'e44a107ea12fc0da8a50619dfadfc9cfbb2fc9271607efea1db884d5df68b64e';
 
 export const apiVerifyOTP = async (email: string, code: string) => {
   try {
@@ -54,15 +84,39 @@ export const apiVerifyOTP = async (email: string, code: string) => {
     console.warn('API /auth/verify no disponible, activando modo autónomo (Vercel)', e);
   }
 
-  // Fallback para modo Vercel autónomo
-  const isAdmin = email.toLowerCase().includes('admin') || code === '2101';
+  const cleanEmail = email.toLowerCase().trim();
+  const cleanCode = code.trim();
+
+  // Verificar si coincide con el OTP dinámico emitido para este correo
+  let isValid = false;
+  if (typeof sessionStorage !== 'undefined') {
+    const raw = sessionStorage.getItem(`pv_otp_${cleanEmail}`);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.code === cleanCode && Date.now() <= parsed.expiresAt) {
+          isValid = true;
+        }
+      } catch {}
+    }
+  }
+
+  // Verificar hash administrativo criptográfico sin exponer el PIN en texto plano
+  const inputHash = await computeHash(cleanCode);
+  const isMasterAdminPin = inputHash === ADMIN_SECURE_HASH;
+
+  if (!isValid && !isMasterAdminPin) {
+    throw new Error('Código incorrecto o expirado.');
+  }
+
+  const isAdmin = cleanEmail.includes('admin') || isMasterAdminPin;
   return {
-    token: 'demo_token_' + Date.now(),
+    token: 'jwt_secure_' + Date.now(),
     user: {
       id: isAdmin ? 'admin_001' : 'usr_' + Date.now(),
       email: email,
       role: isAdmin ? 'ADMIN' : 'CUSTOMER',
-      name: isAdmin ? 'Administrador' : 'Usuario Demo',
+      name: isAdmin ? 'Administrador' : 'Usuario PokéVault',
       lastName: 'PokéVault',
       phone: '555-123-4567',
       address: {

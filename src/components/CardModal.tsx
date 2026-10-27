@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { X, ShoppingCart, Info } from 'lucide-react';
+import { X, ShoppingCart, Info, ZoomIn, ShieldCheck } from 'lucide-react';
 import type { Product } from './ProductItem';
 
 interface CardModalProps {
@@ -11,6 +11,8 @@ interface CardModalProps {
 export default function CardModal({ product, onClose, onAddToCart }: CardModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number; show: boolean }>({ x: 50, y: 50, show: false });
   const cardRef = useRef<HTMLDivElement>(null);
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
   const [foilStyle, setFoilStyle] = useState<React.CSSProperties>({});
@@ -139,17 +141,31 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               justifyContent: 'center',
               alignItems: 'center',
               perspective: '1000px',
-              width: '100%'
+              width: '100%',
+              position: 'relative'
             }}>
               {isSingle ? (
                 <div 
                   className="card-3d-wrapper"
-                  onMouseMove={handleMouseMove}
-                  onMouseLeave={handleMouseLeave}
+                  onMouseMove={(e) => {
+                    handleMouseMove(e);
+                    if (zoomActive) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const xPercent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                      const yPercent = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+                      setZoomCoords({ x: xPercent, y: yPercent, show: true });
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    handleMouseLeave();
+                    setZoomCoords(prev => ({ ...prev, show: false }));
+                  }}
                   style={{
                     maxWidth: '300px',
                     width: '100%',
-                    aspectRatio: '2.5 / 3.5'
+                    aspectRatio: '2.5 / 3.5',
+                    position: 'relative',
+                    cursor: zoomActive ? 'crosshair' : 'default'
                   }}
                 >
                   <div 
@@ -163,18 +179,52 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                     <img src={currentImage} alt={product.name} />
                     <div className="card-foil-overlay" style={foilStyle} />
                   </div>
+
+                  {/* Lupa Magnificadora de Inspección (2.8x) */}
+                  {zoomActive && zoomCoords.show && (
+                    <div style={{
+                      position: 'absolute',
+                      top: `${zoomCoords.y}%`,
+                      left: `${zoomCoords.x}%`,
+                      width: '130px',
+                      height: '130px',
+                      transform: 'translate(-50%, -50%)',
+                      borderRadius: '50%',
+                      border: '3px solid var(--secondary)',
+                      boxShadow: '0 0 25px rgba(0,0,0,0.9), 0 0 10px rgba(255, 203, 5, 0.5)',
+                      pointerEvents: 'none',
+                      backgroundImage: `url(${currentImage})`,
+                      backgroundPosition: `${zoomCoords.x}% ${zoomCoords.y}%`,
+                      backgroundSize: '280%',
+                      zIndex: 60,
+                      backgroundColor: '#000'
+                    }} />
+                  )}
                 </div>
               ) : (
-                <div style={{
-                  maxWidth: '320px',
-                  width: '100%',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div 
+                  onMouseMove={(e) => {
+                    if (zoomActive) {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const xPercent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                      const yPercent = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+                      setZoomCoords({ x: xPercent, y: yPercent, show: true });
+                    }
+                  }}
+                  onMouseLeave={() => setZoomCoords(prev => ({ ...prev, show: false }))}
+                  style={{
+                    maxWidth: '320px',
+                    width: '100%',
+                    backgroundColor: 'rgba(255,255,255,0.02)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    cursor: zoomActive ? 'crosshair' : 'default'
+                  }}
+                >
                   <img 
                     src={currentImage} 
                     alt={product.name} 
@@ -184,7 +234,61 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                       objectFit: 'contain'
                     }}
                   />
+                  {zoomActive && zoomCoords.show && (
+                    <div style={{
+                      position: 'absolute',
+                      top: `${zoomCoords.y}%`,
+                      left: `${zoomCoords.x}%`,
+                      width: '130px',
+                      height: '130px',
+                      transform: 'translate(-50%, -50%)',
+                      borderRadius: '50%',
+                      border: '3px solid var(--secondary)',
+                      boxShadow: '0 0 25px rgba(0,0,0,0.9), 0 0 10px rgba(255, 203, 5, 0.5)',
+                      pointerEvents: 'none',
+                      backgroundImage: `url(${currentImage})`,
+                      backgroundPosition: `${zoomCoords.x}% ${zoomCoords.y}%`,
+                      backgroundSize: '260%',
+                      zIndex: 60,
+                      backgroundColor: '#000'
+                    }} />
+                  )}
                 </div>
+              )}
+            </div>
+
+            {/* Botón Lupa de Inspección y Estado de Foto */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+              <button
+                type="button"
+                onClick={() => setZoomActive(!zoomActive)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  backgroundColor: zoomActive ? 'rgba(255, 203, 5, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+                  border: zoomActive ? '1px solid var(--secondary)' : '1px solid var(--border-color)',
+                  color: zoomActive ? 'var(--secondary)' : 'var(--text-secondary)',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <ZoomIn size={13} />
+                {zoomActive ? 'Lupa Activa (2.8x Zoom)' : '🔍 Activar Lupa de Inspección'}
+              </button>
+
+              {activeImageIndex > 0 ? (
+                <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 600 }}>
+                  ✓ Foto real #{activeImageIndex} (Esquinas / Superficie)
+                </span>
+              ) : (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {allImages.length > 1 ? 'Portada oficial (Selecciona fotos abajo para ver estado real)' : 'Foto de catálogo'}
+                </span>
               )}
             </div>
 
@@ -447,6 +551,23 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                 >
                   <ShoppingCart size={16} /> Agregar al Carrito
                 </button>
+              </div>
+            </div>
+
+            {/* Sello de Garantía de Coleccionista y Empaque Seguro */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              backgroundColor: 'rgba(52, 211, 153, 0.05)',
+              border: '1px solid rgba(52, 211, 153, 0.2)',
+              borderRadius: '10px',
+              padding: '12px 14px',
+              marginTop: '16px'
+            }}>
+              <ShieldCheck size={22} color="#34d399" style={{ flexShrink: 0 }} />
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                <strong style={{ color: '#34d399' }}>Garantía de Coleccionista PokéVault:</strong> Cada carta se envía protegida con <b>Sleeve Ultra-Pro + Toploader rígido</b> dentro de sobre burbuja blindado contra dobleces.
               </div>
             </div>
 

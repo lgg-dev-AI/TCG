@@ -14,14 +14,53 @@ export interface CardSearchResult {
   marketPrice?: number;
 }
 
-// Obtener las expansiones reales donde aparece un Pokémon
+// Caché inteligente de alta velocidad para no saturar las cuotas gratuitas de pokemontcg.io
+const memoryCache = new Map<string, { timestamp: number; data: any }>();
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+
+function getCached<T>(key: string): T | null {
+  const mem = memoryCache.get(key);
+  if (mem && (Date.now() - mem.timestamp < CACHE_TTL_MS)) {
+    return mem.data as T;
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const stored = sessionStorage.getItem(`tcg_cache_${key}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+          memoryCache.set(key, parsed);
+          return parsed.data as T;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+function setCached<T>(key: string, data: T): void {
+  const item = { timestamp: Date.now(), data };
+  memoryCache.set(key, item);
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      sessionStorage.setItem(`tcg_cache_${key}`, JSON.stringify(item));
+    } catch {}
+  }
+}
+
+// Obtener las expansiones reales donde aparece un Pokémon con caché resiliente
 export const fetchPokemonExpansionsForCard = async (pokemonName: string): Promise<string[]> => {
   if (!pokemonName || !pokemonName.trim()) return [];
+  const clean = pokemonName.trim().replace(/[*"]/g, '');
+  const cacheKey = `exp_${clean.toLowerCase()}`;
+  
+  const cached = getCached<string[]>(cacheKey);
+  if (cached) return cached;
+
   try {
-    const clean = pokemonName.trim().replace(/[*"]/g, '');
     const url = `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(clean)}"&select=set&pageSize=100`;
     const res = await fetch(url);
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error(`API pokemontcg status: ${res.status}`);
     const data = await res.json();
     const sets = new Set<string>();
     (data.data || []).forEach((c: any) => {
@@ -29,36 +68,44 @@ export const fetchPokemonExpansionsForCard = async (pokemonName: string): Promis
         sets.add(c.set.name);
       }
     });
-    return Array.from(sets).sort((a, b) => a.localeCompare(b));
+    const result = Array.from(sets).sort((a, b) => a.localeCompare(b));
+    setCached(cacheKey, result);
+    return result;
   } catch (e) {
-    console.error('Error fetching card expansions:', e);
-    return [];
+    console.warn('API Pokémon TCG no disponible o limitada, intentando respaldo...', e);
+    // Si la API falla, retornar de caché si existe aunque haya expirado
+    const fallback = memoryCache.get(cacheKey)?.data;
+    return fallback || [];
   }
 };
 
-// Interfaz adaptadora para múltiples TCGs
+// Interfaz adaptadora para múltiples TCGs con caché ultrarrápido
 export const multiTcgSearch = async (query: string, gameType: string, expansion?: string): Promise<CardSearchResult[]> => {
   if (!query && !expansion) return [];
+
+  const cleanName = query.trim().replace(/[*"]/g, '');
+  const cleanExpansion = expansion ? expansion.trim().replace(/[*"]/g, '') : '';
+  const cacheKey = `search_${gameType}_${cleanName.toLowerCase()}_${cleanExpansion.toLowerCase()}`;
+
+  const cachedResults = getCached<CardSearchResult[]>(cacheKey);
+  if (cachedResults) {
+    return cachedResults;
+  }
 
   try {
     switch (gameType) {
       case 'POKEMON': {
-        // La API pokemontcg.io falla con Error 502 cuando se usan asteriscos (*) en set.name
-        // La forma oficial y 100% estable es name:"nombre" o buscar por nombre y filtrar localmente
         let q = '';
-        const cleanName = query.trim().replace(/[*"]/g, '');
-        const cleanExpansion = expansion ? expansion.trim().replace(/[*"]/g, '') : '';
 
         if (cleanName) {
           q = `name:"${cleanName}"`;
         } else if (cleanExpansion) {
-          // Si solo viene expansión, buscar Pokémon populares de esa era para traer el conjunto
           q = 'supertype:pokemon';
         }
 
         const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=100`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error('API Error (Pokémon)');
+        if (!response.ok) throw new Error(`API pokemontcg.io status ${response.status}`);
         const data = await response.json();
         
         let results = data.data || [];
@@ -71,7 +118,7 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
           );
         }
 
-        return results.map((card: any) => ({
+        const mapped: CardSearchResult[] = results.map((card: any) => ({
           id: card.id,
           name: card.name,
           images: { small: card.images?.small || '', large: card.images?.large || card.images?.small || '' },
@@ -79,6 +126,9 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
           game_type: 'POKEMON',
           marketPrice: card.cardmarket?.prices?.averageSellPrice || 0
         }));
+
+        setCached(cacheKey, mapped);
+        return mapped;
       }
 
       case 'MAGIC': {

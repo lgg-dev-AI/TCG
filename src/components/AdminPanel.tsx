@@ -9,6 +9,7 @@ import type { UserData } from './AccountPanel';
 import { multiTcgSearch, fetchPokemonExpansionsForCard, type CardSearchResult } from '../services/multiTcgApi';
 import { TCG_EXPANSIONS } from '../data/tcgExpansions';
 import { apiGetAdminLogs } from '../api';
+import { compressImage } from '../utils/imageCompressor';
 
 export interface OrderItem {
   productId: string;
@@ -318,23 +319,36 @@ export default function AdminPanel({
   const [editProdGameType, setEditProdGameType] = useState('');
 
 
-  // Helper to handle local file upload to Base64
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
+  // Helper to handle local file upload to Base64 with automatic WebP compression
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
+    try {
+      const compressedBase64 = await compressImage(file, 1200, 0.82);
       if (isEdit) {
-        setEditProdFileBase64(base64String);
+        setEditProdFileBase64(compressedBase64);
         setEditProdFileName(file.name);
       } else {
-        setNewProdFileBase64(base64String);
+        setNewProdFileBase64(compressedBase64);
         setNewProdFileName(file.name);
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error al comprimir imagen:', err);
+      // Fallback lectura directa si falla
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (isEdit) {
+          setEditProdFileBase64(base64String);
+          setEditProdFileName(file.name);
+        } else {
+          setNewProdFileBase64(base64String);
+          setNewProdFileName(file.name);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Handler: Add new product
@@ -1678,16 +1692,22 @@ export default function AdminPanel({
                         type="file"
                         accept="image/*"
                         style={{ display: 'none' }}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            if (typeof reader.result === 'string') {
-                              setNewProdGalleryImages(prev => [...prev, reader.result as string].slice(0, 5));
-                            }
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressImage(file, 1200, 0.82);
+                            setNewProdGalleryImages(prev => [...prev, compressed].slice(0, 5));
+                          } catch (err) {
+                            console.error('Error al comprimir foto de integridad:', err);
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result === 'string') {
+                                setNewProdGalleryImages(prev => [...prev, reader.result as string].slice(0, 5));
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
                           e.target.value = '';
                         }}
                       />

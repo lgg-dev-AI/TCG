@@ -1030,6 +1030,42 @@ export default function CheckoutForm({
               </div>
             </div>
 
+            {/* Garantías de Envío y Coleccionismo PokéVault */}
+            <div className="glass" style={{ padding: '20px', borderRadius: '12px', border: '1px solid rgba(52, 211, 153, 0.25)', backgroundColor: 'rgba(52, 211, 153, 0.03)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <ShieldCheck size={20} color="#34d399" />
+                <h4 style={{ fontSize: '13.5px', fontWeight: 800, color: 'white', margin: 0 }}>
+                  Garantía PokéVault en cada Pedido
+                </h4>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '16px' }}>🛡️</span>
+                  <div>
+                    <strong style={{ color: 'white', display: 'block' }}>Empaque Blindado para Coleccionistas</strong>
+                    <span>Cartas en Sleeves Ultra-Pro + Toploaders rígidos para evitar dobleces o marcas de presión.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '16px' }}>📦</span>
+                  <div>
+                    <strong style={{ color: 'white', display: 'block' }}>Sobre Burbuja Impermeable</strong>
+                    <span>Protección multicapa contra humedad e impactos durante el trayecto de paquetería.</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '16px' }}>🔍</span>
+                  <div>
+                    <strong style={{ color: 'white', display: 'block' }}>Autenticidad e Integridad 100%</strong>
+                    <span>Piezas 100% oficiales inspeccionadas a detalle previo al despacho.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
