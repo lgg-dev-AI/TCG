@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "lastLogin": "2026-06-16T10:29:00.000-06:00",
+  "maxDays": 60,
+  "degradationMode": "progressive",
+  "bypassKey": "default_bypass_key_0000"
+}
