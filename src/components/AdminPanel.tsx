@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, Package, ShoppingBag, Users, Plus, Tag, Settings2,
   Edit, Check, X, ShieldAlert, ChevronDown, ChevronUp, Clock, Truck, CheckCircle2,
-  AlertTriangle, Upload, Banknote, Save, Trash2, Search, Loader2
+  AlertTriangle, Upload, Banknote, Save, Trash2, Search, Loader2,
+  QrCode, Printer, Gamepad2, Smartphone, Sparkles, Copy
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
@@ -115,7 +116,7 @@ export default function AdminPanel({
   onUpdateBankSettings,
   onRegisterManualSale
 }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'inventory' | 'sales' | 'customers' | 'coupons' | 'settings' | 'logs'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'inventory' | 'sales' | 'customers' | 'coupons' | 'settings' | 'logs' | 'stand'>('metrics');
   const [timeRange, setTimeRange] = useState<'today' | '7days' | 'month' | 'year' | 'all'>('7days');
   const [adminLogs, setAdminLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
@@ -149,7 +150,16 @@ export default function AdminPanel({
   const [newProdPulledFrom, setNewProdPulledFrom] = useState('');
   const [newProdCardCondition, setNewProdCardCondition] = useState('NM');
   const [newProdGameType, setNewProdGameType] = useState('POKEMON');
+  const [newProdPlatform, setNewProdPlatform] = useState('Nintendo Switch');
+  const [newProdCompleteness, setNewProdCompleteness] = useState('CIB (Completo en Caja)');
+  const [newProdIsTournamentStaple, setNewProdIsTournamentStaple] = useState(false);
   const [newProdGalleryImages, setNewProdGalleryImages] = useState<string[]>([]); // Hasta 5 imágenes adicionales subidas por el usuario (total 6 con la portada)
+
+  // Stand / Mercaditos interactive states
+  const [tradeInMarketPrice, setTradeInMarketPrice] = useState<number>(500);
+  const [calcChargeAmount, setCalcChargeAmount] = useState<number>(0);
+  const [calcReceivedCash, setCalcReceivedCash] = useState<number>(0);
+  const [copiedClabe, setCopiedClabe] = useState(false);
 
   // States for TCG API card search
   const [apiSearchQuery, setApiSearchQuery] = useState('');
@@ -317,6 +327,9 @@ export default function AdminPanel({
   const [editProdPulledFrom, setEditProdPulledFrom] = useState('');
   const [editProdCardCondition, setEditProdCardCondition] = useState('');
   const [editProdGameType, setEditProdGameType] = useState('');
+  const [editProdPlatform, setEditProdPlatform] = useState('Nintendo Switch');
+  const [editProdCompleteness, setEditProdCompleteness] = useState('CIB (Completo en Caja)');
+  const [editProdIsTournamentStaple, setEditProdIsTournamentStaple] = useState(false);
 
 
   // Helper to handle local file upload to Base64 with automatic WebP compression
@@ -356,11 +369,14 @@ export default function AdminPanel({
     e.preventDefault();
     
     let finalImage = '';
-    if (newProdCategory === 'accessory') {
-      finalImage = newProdFileBase64;
-      if (!finalImage) {
+    if (newProdCategory === 'accessory' || newProdCategory === 'videogame') {
+      finalImage = newProdFileBase64 || newProdImage.trim();
+      if (!finalImage && newProdCategory === 'accessory') {
         alert("Por favor sube una foto del accesorio.");
         return;
+      }
+      if (!finalImage && newProdCategory === 'videogame') {
+        finalImage = 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg';
       }
     } else if (newProdCategory === 'single') {
       finalImage = newProdImage.trim() || '/generic_card.png';
@@ -401,6 +417,9 @@ export default function AdminPanel({
       pulledFrom: newProdCategory === 'single' ? newProdPulledFrom : '',
       cardCondition: newProdCategory === 'single' ? newProdCardCondition : '',
       gameType: newProdCategory === 'single' ? newProdGameType : 'POKEMON',
+      platform: newProdCategory === 'videogame' ? newProdPlatform : undefined,
+      completeness: newProdCategory === 'videogame' ? newProdCompleteness : undefined,
+      isTournamentStaple: newProdIsTournamentStaple,
       galleryImages: [finalImage, ...newProdGalleryImages].filter(Boolean).slice(0, 6)
     };
 
@@ -420,6 +439,9 @@ export default function AdminPanel({
     setNewProdPulledFrom('');
     setNewProdCardCondition('NM');
     setNewProdGameType('POKEMON');
+    setNewProdPlatform('Nintendo Switch');
+    setNewProdCompleteness('CIB (Completo en Caja)');
+    setNewProdIsTournamentStaple(false);
     setNewProdGalleryImages([]);
     setApiSearchQuery('');
     setApiSearchResults([]);
@@ -500,6 +522,9 @@ export default function AdminPanel({
     setEditProdPulledFrom(p.pulledFrom || '');
     setEditProdCardCondition(p.cardCondition || 'NM');
     setEditProdGameType(p.gameType || 'POKEMON');
+    setEditProdPlatform(p.platform || 'Nintendo Switch');
+    setEditProdCompleteness(p.completeness || 'CIB (Completo en Caja)');
+    setEditProdIsTournamentStaple(!!p.isTournamentStaple);
   };
 
   // Save edited product
@@ -508,9 +533,9 @@ export default function AdminPanel({
     if (!editingProduct) return;
 
     let finalImage = '';
-    if (editProdCategory === 'accessory') {
-      finalImage = editProdFileBase64 || editProdImage;
-      if (!finalImage) {
+    if (editProdCategory === 'accessory' || editProdCategory === 'videogame') {
+      finalImage = editProdFileBase64 || editProdImage.trim() || 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg';
+      if (!finalImage && editProdCategory === 'accessory') {
         alert("Por favor sube una foto del accesorio.");
         return;
       }
@@ -552,6 +577,9 @@ export default function AdminPanel({
       pulledFrom: editProdCategory === 'single' ? editProdPulledFrom : '',
       cardCondition: editProdCategory === 'single' ? editProdCardCondition : '',
       gameType: editProdCategory === 'single' ? editProdGameType : 'POKEMON',
+      platform: editProdCategory === 'videogame' ? editProdPlatform : undefined,
+      completeness: editProdCategory === 'videogame' ? editProdCompleteness : undefined,
+      isTournamentStaple: editProdIsTournamentStaple,
       galleryImages: editingProduct.galleryImages
     });
 
@@ -894,6 +922,19 @@ export default function AdminPanel({
           style={getTabStyle(activeTab === 'logs')}
         >
           <Clock size={15} /> Auditoría (Logs)
+        </button>
+        <button
+          onClick={() => setActiveTab('stand')}
+          className={`tab-btn ${activeTab === 'stand' ? 'active' : ''}`}
+          style={{
+            ...getTabStyle(activeTab === 'stand'),
+            borderColor: activeTab === 'stand' ? '#ffcb05' : 'rgba(255, 203, 5, 0.3)',
+            backgroundColor: activeTab === 'stand' ? 'rgba(255, 203, 5, 0.15)' : 'rgba(255, 203, 5, 0.05)',
+            color: activeTab === 'stand' ? '#ffcb05' : '#f59e0b',
+            fontWeight: 700
+          }}
+        >
+          <QrCode size={15} /> 🎪 Modo Stand / Mercaditos
         </button>
       </div>
 
@@ -1420,6 +1461,7 @@ export default function AdminPanel({
                     <option value="blister">Blister Pack</option>
                     <option value="accessory">Accesorio</option>
                     <option value="single">Carta Suelta (Single)</option>
+                    <option value="videogame">🎮 Videojuego / Consola</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1515,6 +1557,83 @@ export default function AdminPanel({
                 </div>
               )}
 
+              {/* Atributos Específicos para Videojuegos y Consolas */}
+              {newProdCategory === 'videogame' && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '16px',
+                  padding: '16px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Plataforma / Consola</label>
+                    <select
+                      value={newProdPlatform}
+                      onChange={(e) => setNewProdPlatform(e.target.value)}
+                      style={getFormInputStyle()}
+                    >
+                      <option value="Nintendo Switch">Nintendo Switch</option>
+                      <option value="PlayStation 5">PlayStation 5</option>
+                      <option value="PlayStation 4">PlayStation 4</option>
+                      <option value="Xbox Series X/S">Xbox Series X/S</option>
+                      <option value="Xbox One">Xbox One</option>
+                      <option value="Retro (GameBoy / DS / 3DS / N64)">Retro (GameBoy / DS / 3DS / N64)</option>
+                      <option value="Consolas / Hardware">Consolas / Hardware</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Estado / Empaque</label>
+                    <select
+                      value={newProdCompleteness}
+                      onChange={(e) => setNewProdCompleteness(e.target.value)}
+                      style={getFormInputStyle()}
+                    >
+                      <option value="CIB (Completo en Caja)">CIB (Completo con Caja y Manual)</option>
+                      <option value="Cartucho / Disco Suelto">Cartucho / Disco Suelto (Loose)</option>
+                      <option value="Sellado / Nuevo de Fábrica">Sellado / Nuevo de Fábrica</option>
+                      <option value="Consola con Cables y Controles">Consola con Cables y Controles</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Subir Foto del Juego/Consola</label>
+                    <input
+                      type="file"
+                      id="newProdVgFileInput"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, false)}
+                      style={getFormInputStyle()}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Destacar como Staple de Torneo */}
+              <div style={{
+                marginBottom: '16px',
+                padding: '12px 16px',
+                backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <input
+                  type="checkbox"
+                  id="newProdStapleCheck"
+                  checked={newProdIsTournamentStaple}
+                  onChange={(e) => setNewProdIsTournamentStaple(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
+                />
+                <label htmlFor="newProdStapleCheck" style={{ fontSize: '13px', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
+                  🏆 Destacar como Staple / Producto Competitivo para Torneos (Aparece con insignia de prioridad competitiva)
+                </label>
+              </div>
+
               {/* Carga de Imagen para Accesorios */}
               {newProdCategory === 'accessory' && (
                 <div style={{
@@ -1596,6 +1715,8 @@ export default function AdminPanel({
                         ? '/official_blister.png'
                         : newProdCategory === 'accessory'
                         ? (newProdFileBase64 || '/generic_etb.png')
+                        : newProdCategory === 'videogame'
+                        ? (newProdFileBase64 || newProdImage || 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg')
                         : '/generic_card.png'
                     }
                     alt="Vista previa"
@@ -1608,8 +1729,10 @@ export default function AdminPanel({
                     <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                       {newProdCategory === 'single' && newProdImage 
                         ? 'Cargada desde Pokémon TCG API' 
-                        : newProdCategory === 'accessory'
-                        ? 'Foto subida por el administrador'
+                        : (newProdCategory === 'accessory' || newProdCategory === 'videogame') && newProdFileBase64
+                        ? 'Foto real subida por el administrador'
+                        : newProdCategory === 'videogame'
+                        ? 'Carátula oficial de videojuego'
                         : 'Imagen oficial sin copyright de PokéVault'}
                     </span>
                   </div>
@@ -3099,6 +3222,395 @@ export default function AdminPanel({
         </div>
       )}
 
+      {/* TAB 8: MODO STAND / MERCADITOS Y EVENTOS COMPETITIVOS */}
+      {activeTab === 'stand' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+          
+          {/* Header del Modo Stand */}
+          <div className="glass" style={{
+            padding: '24px',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 203, 5, 0.3)',
+            backgroundColor: 'rgba(255, 203, 5, 0.03)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '26px' }}>🎪</span>
+                <Gamepad2 size={24} style={{ color: '#60a5fa' }} />
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'white', margin: 0, fontFamily: 'var(--font-heading)' }}>
+                  Modo Stand: Mercaditos, Bazares y Torneos
+                </h3>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '6px 0 0 0' }}>
+                Herramientas de venta rápida frente a mostrador: cobro exprés por SPEI/Efectivo, evaluador de Trade-in para clientes y póster imprimible con código QR.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="btn btn-secondary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+              >
+                <Printer size={16} /> Imprimir Letrero QR
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowManualSaleModal(true)}
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+              >
+                <ShoppingBag size={16} /> Nueva Venta en Mostrador
+              </button>
+            </div>
+          </div>
+
+          {/* Grid de 3 Columnas Clave */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '24px'
+          }}>
+
+            {/* Tarjeta 1: Letrero QR del Stand (Escaneo de Clientes) */}
+            <div className="glass" style={{
+              padding: '24px',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              backgroundColor: 'rgba(22, 27, 38, 0.4)'
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                padding: '16px',
+                borderRadius: '16px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                marginBottom: '16px'
+              }}>
+                {/* Generador de QR dinámico gratuito para el sitio */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin || 'https://tcgpoke.vercel.app')}`}
+                  alt="QR Tienda PokéVault"
+                  style={{ width: '180px', height: '180px', display: 'block' }}
+                />
+              </div>
+
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 800,
+                color: '#34d399',
+                backgroundColor: 'rgba(52, 211, 153, 0.12)',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '8px'
+              }}>
+                Mostrador Digital Activo
+              </span>
+
+              <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'white', margin: '4px 0' }}>
+                Catálogo en Vivo para Clientes
+              </h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '4px 0 16px 0' }}>
+                Coloca este QR en tu mesa o mostrador. Quienes pasen por tu stand pueden ver todo tu inventario en sus celulares con fotos en alta definición.
+              </p>
+
+              <div style={{
+                backgroundColor: 'rgba(0,0,0,0.25)',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                width: '100%',
+                fontSize: '12px',
+                color: 'var(--text-muted)',
+                fontFamily: 'monospace',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                border: '1px solid rgba(255,255,255,0.05)'
+              }}>
+                {window.location.origin || 'https://tcgpoke.vercel.app'}
+              </div>
+            </div>
+
+            {/* Tarjeta 2: Cobro Rápido SPEI & Efectivo */}
+            <div className="glass" style={{
+              padding: '24px',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'rgba(22, 27, 38, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                  <Smartphone size={20} style={{ color: '#60a5fa' }} />
+                  <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'white', margin: 0 }}>
+                    Terminal SPEI & Cambio
+                  </h4>
+                </div>
+
+                <div style={{
+                  padding: '14px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(96, 165, 250, 0.08)',
+                  border: '1px solid rgba(96, 165, 250, 0.25)',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ fontSize: '11px', color: '#93c5fd', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Cuenta para Transferencia Inmediata
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'white', marginTop: '4px' }}>
+                    {bankSettings.bankName || 'Banco Configurado'}
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginTop: '6px',
+                    fontFamily: 'monospace',
+                    fontSize: '15px',
+                    color: '#ffcb05',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em'
+                  }}>
+                    <span>{bankSettings.clabe || 'Sin CLABE configurada'}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (bankSettings.clabe) {
+                          navigator.clipboard.writeText(bankSettings.clabe);
+                          setCopiedClabe(true);
+                          setTimeout(() => setCopiedClabe(false), 2000);
+                        }
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: copiedClabe ? '#34d399' : 'white',
+                        cursor: 'pointer',
+                        padding: '4px'
+                      }}
+                      title="Copiar CLABE"
+                    >
+                      {copiedClabe ? <Check size={16} /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    Beneficiario: <strong>{bankSettings.beneficiary || 'PokéVault'}</strong>
+                  </div>
+                </div>
+
+                {/* Calculadora de Cambio para Efectivo */}
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'white', display: 'block', marginBottom: '8px' }}>
+                    💵 Calculadora Rápida de Cambio
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Total a Cobrar ($):</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={calcChargeAmount || ''}
+                        onChange={(e) => setCalcChargeAmount(Number(e.target.value))}
+                        style={getFormInputStyle()}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Efectivo Recibido ($):</label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={calcReceivedCash || ''}
+                        onChange={(e) => setCalcReceivedCash(Number(e.target.value))}
+                        style={getFormInputStyle()}
+                      />
+                    </div>
+                  </div>
+                  <div style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    backgroundColor: calcReceivedCash >= calcChargeAmount && calcChargeAmount > 0 ? 'rgba(52, 211, 153, 0.1)' : 'rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Cambio a Devolver:</span>
+                    <span style={{
+                      fontSize: '15px',
+                      fontWeight: 800,
+                      color: calcReceivedCash >= calcChargeAmount && calcChargeAmount > 0 ? '#34d399' : '#ff6b6b'
+                    }}>
+                      ${Math.max(0, calcReceivedCash - calcChargeAmount).toLocaleString('es-MX')} MXN
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta 3: Evaluador de Trade-In / Compra en Puesto */}
+            <div className="glass" style={{
+              padding: '24px',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'rgba(22, 27, 38, 0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                  <Banknote size={20} style={{ color: '#34d399' }} />
+                  <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'white', margin: 0 }}>
+                    Evaluador de Trade-In y Recompra
+                  </h4>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 14px 0' }}>
+                  ¿Un cliente te ofrece un juego de Switch o una carta rara en tu stand? Calcula al instante tu oferta justa y con margen garantizado.
+                </p>
+
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ fontSize: '12px', color: 'white', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                    Valor de Mercado Estimado (MXN):
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={tradeInMarketPrice || ''}
+                    onChange={(e) => setTradeInMarketPrice(Number(e.target.value))}
+                    style={{ ...getFormInputStyle(), fontSize: '16px', fontWeight: 700, color: '#ffcb05' }}
+                    placeholder="ej. 800"
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(52, 211, 153, 0.08)',
+                    border: '1px solid rgba(52, 211, 153, 0.3)'
+                  }}>
+                    <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 700, display: 'block' }}>
+                      💵 Pago Efectivo (60%)
+                    </span>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: 'white', display: 'block', marginTop: '4px' }}>
+                      ${Math.round(tradeInMarketPrice * 0.60).toLocaleString('es-MX')}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Margen bruto: 40%</span>
+                  </div>
+
+                  <div style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)'
+                  }}>
+                    <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, display: 'block' }}>
+                      🔄 Crédito Tienda (75%)
+                    </span>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: 'white', display: 'block', marginTop: '4px' }}>
+                      ${Math.round(tradeInMarketPrice * 0.75).toLocaleString('es-MX')}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Para canjear en tu stand</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '16px', fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                💡 En eventos, ofrecer un 15% más en crédito de tienda retiene la venta y mueve más producto.
+              </div>
+            </div>
+
+          </div>
+
+          {/* Radar de Staples de Torneo & Videojuegos Listos para Llevar */}
+          <div className="glass" style={{
+            padding: '24px',
+            borderRadius: '16px',
+            border: '1px solid var(--border-color)',
+            backgroundColor: 'rgba(22, 27, 38, 0.4)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h4 style={{ fontSize: '16px', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={18} style={{ color: '#f59e0b' }} />
+                  Radar de Torneo: Staples y Videojuegos con Mayor Demanda
+                </h4>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                  Artículos de alta rotación para tener a la mano en tu caja de mostrador durante el evento.
+                </p>
+              </div>
+              <span style={{ fontSize: '12px', color: '#ffcb05', fontWeight: 700 }}>
+                {inventory.filter(p => p.isTournamentStaple || p.category === 'videogame' || p.category === 'accessory').length} productos recomendados
+              </span>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: '12px'
+            }}>
+              {inventory
+                .filter(p => p.isTournamentStaple || p.category === 'videogame' || p.category === 'accessory')
+                .slice(0, 8)
+                .map(item => (
+                  <div key={item.id} style={{
+                    padding: '12px',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid var(--border-color)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      style={{ width: '45px', height: '55px', objectFit: 'contain', borderRadius: '4px' }}
+                    />
+                    <div style={{ minWidth: 0, flexGrow: 1 }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.name}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--secondary)', fontWeight: 800 }}>
+                          ${item.price.toLocaleString('es-MX')} MXN
+                        </span>
+                        <span style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          backgroundColor: item.stock > 0 ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255, 62, 62, 0.15)',
+                          color: item.stock > 0 ? '#34d399' : '#ff6b6b',
+                          fontWeight: 700
+                        }}>
+                          {item.stock > 0 ? `${item.stock} en stand` : 'Agotado'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                        {item.category === 'videogame' ? `🎮 ${item.platform || 'Videojuego'}` : item.category === 'accessory' ? '🛡️ Accesorio' : '🔥 Staple Torneo'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+        </div>
+      )}
+
       {/* MODAL EDITAR PRODUCTO */}
       {editingProduct && (
         <div style={{
@@ -3188,6 +3700,7 @@ export default function AdminPanel({
                     <option value="blister">Blister Pack</option>
                     <option value="accessory">Accesorio</option>
                     <option value="single">Carta Suelta (Single)</option>
+                    <option value="videogame">🎮 Videojuego / Consola</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -3280,6 +3793,83 @@ export default function AdminPanel({
                 </div>
               )}
 
+              {/* Atributos Específicos para Videojuegos y Consolas */}
+              {editProdCategory === 'videogame' && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '16px',
+                  padding: '16px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(59, 130, 246, 0.2)'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Plataforma / Consola</label>
+                    <select
+                      value={editProdPlatform}
+                      onChange={(e) => setEditProdPlatform(e.target.value)}
+                      style={getFormInputStyle()}
+                    >
+                      <option value="Nintendo Switch">Nintendo Switch</option>
+                      <option value="PlayStation 5">PlayStation 5</option>
+                      <option value="PlayStation 4">PlayStation 4</option>
+                      <option value="Xbox Series X/S">Xbox Series X/S</option>
+                      <option value="Xbox One">Xbox One</option>
+                      <option value="Retro (GameBoy / DS / 3DS / N64)">Retro (GameBoy / DS / 3DS / N64)</option>
+                      <option value="Consolas / Hardware">Consolas / Hardware</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Estado / Empaque</label>
+                    <select
+                      value={editProdCompleteness}
+                      onChange={(e) => setEditProdCompleteness(e.target.value)}
+                      style={getFormInputStyle()}
+                    >
+                      <option value="CIB (Completo en Caja)">CIB (Completo con Caja y Manual)</option>
+                      <option value="Cartucho / Disco Suelto">Cartucho / Disco Suelto (Loose)</option>
+                      <option value="Sellado / Nuevo de Fábrica">Sellado / Nuevo de Fábrica</option>
+                      <option value="Consola con Cables y Controles">Consola con Cables y Controles</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Cambiar Foto del Juego/Consola</label>
+                    <input
+                      type="file"
+                      id="editProdVgFileInput"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, true)}
+                      style={getFormInputStyle()}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Destacar como Staple de Torneo */}
+              <div style={{
+                marginBottom: '16px',
+                padding: '12px 16px',
+                backgroundColor: 'rgba(245, 158, 11, 0.05)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <input
+                  type="checkbox"
+                  id="editProdStapleCheck"
+                  checked={editProdIsTournamentStaple}
+                  onChange={(e) => setEditProdIsTournamentStaple(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#f59e0b', cursor: 'pointer' }}
+                />
+                <label htmlFor="editProdStapleCheck" style={{ fontSize: '13px', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
+                  🏆 Destacar como Staple / Producto Competitivo para Torneos (Aparece con insignia de prioridad competitiva)
+                </label>
+              </div>
+
               {/* Carga de Imagen para Accesorios (Edición) */}
               {editProdCategory === 'accessory' && (
                 <div style={{
@@ -3361,6 +3951,8 @@ export default function AdminPanel({
                         ? '/official_blister.png'
                         : editProdCategory === 'accessory'
                         ? (editProdFileBase64 || editProdImage || '/generic_etb.png')
+                        : editProdCategory === 'videogame'
+                        ? (editProdFileBase64 || editProdImage || 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg')
                         : '/generic_card.png'
                     }
                     alt="Vista previa"
@@ -3373,8 +3965,10 @@ export default function AdminPanel({
                     <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                       {editProdCategory === 'single' && editProdImage 
                         ? 'Cargada desde Pokémon TCG API' 
-                        : editProdCategory === 'accessory'
+                        : (editProdCategory === 'accessory' || editProdCategory === 'videogame') && editProdFileBase64
                         ? 'Foto subida por el administrador'
+                        : editProdCategory === 'videogame'
+                        ? 'Carátula oficial de videojuego'
                         : 'Imagen oficial sin copyright de PokéVault'}
                     </span>
                   </div>

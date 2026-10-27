@@ -49,6 +49,9 @@ const mapProductFromDB = (p: any): Product => ({
   pulledFrom: p.pulled_from || '',
   cardCondition: p.card_condition || '',
   gameType: p.game_type || 'POKEMON',
+  platform: p.platform || '',
+  completeness: p.completeness || '',
+  isTournamentStaple: !!p.is_tournament_staple,
   galleryImages: p.gallery_images ? (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images) : (p.galleryImages || [])
 });
 
@@ -337,6 +340,9 @@ export default function App() {
         pulled_from: updates.pulledFrom,
         card_condition: updates.cardCondition,
         game_type: updates.gameType,
+        platform: updates.platform,
+        completeness: updates.completeness,
+        is_tournament_staple: updates.isTournamentStaple,
         gallery_images: updates.galleryImages ? JSON.stringify(updates.galleryImages) : undefined
       };
       await apiUpdateProduct(productId, payload);
@@ -361,6 +367,9 @@ export default function App() {
         pulled_from: newProduct.pulledFrom,
         card_condition: newProduct.cardCondition,
         game_type: newProduct.gameType,
+        platform: newProduct.platform,
+        completeness: newProduct.completeness,
+        is_tournament_staple: newProduct.isTournamentStaple,
         gallery_images: newProduct.galleryImages ? JSON.stringify(newProduct.galleryImages) : undefined
       };
       const res = await apiCreateProduct(payload);

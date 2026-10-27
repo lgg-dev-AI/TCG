@@ -104,6 +104,39 @@ export const MOCK_PRODUCTS: Product[] = [
     image: 'https://images.pokemoncenter.com/images/products/P9159/712-97062/712-97062_1.jpg',
     description: 'Tapete de juego de hule natural con superficie de tela suave. Bordes cosidos de alta resistencia para evitar deshilachado. Tamaño estándar de juego.',
     stock: 10,
+  },
+  {
+    id: 'vg_1',
+    name: 'Pokémon Escarlata (Nintendo Switch)',
+    price: 1199,
+    category: 'videogame',
+    image: 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg',
+    description: 'Juego físico original para Nintendo Switch. Explora la región de Paldea en un mundo abierto sin límites. Caja y cartucho en perfecto estado garantizado.',
+    stock: 3,
+    platform: 'Nintendo Switch',
+    completeness: 'CIB (Completo en Caja)'
+  },
+  {
+    id: 'vg_2',
+    name: 'Super Smash Bros. Ultimate (Nintendo Switch)',
+    price: 1099,
+    category: 'videogame',
+    image: 'https://images.pokemoncenter.com/images/products/P9159/712-97066/712-97066_1.jpg',
+    description: 'El clásico juego de peleas competitivo de Nintendo con Pikachu, Charizard, Greninja, Lucario y Mewtwo. Cartucho probado y funcionando al 100%.',
+    stock: 2,
+    platform: 'Nintendo Switch',
+    completeness: 'CIB (Completo en Caja)'
+  },
+  {
+    id: 'vg_3',
+    name: 'Consola Nintendo Switch OLED - Edición Especial Pokémon',
+    price: 6499,
+    category: 'videogame',
+    image: 'https://images.pokemoncenter.com/images/products/P9411/712-98442/712-98442_1.jpg',
+    description: 'Consola Nintendo Switch OLED con pantalla de 7 pulgadas en perfecto estado. Incluye Joy-Con edición temática, dock, cables originales y garantía de funcionamiento en tienda.',
+    stock: 1,
+    platform: 'Consolas / Hardware',
+    completeness: 'Completo con Accesorios'
   }
 ];
 
@@ -132,6 +165,7 @@ export default function ProductCatalog({
   const [expansionFilter, setExpansionFilter] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedCondition, setSelectedCondition] = useState<string>('all');
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
 
   // Estado para cartas API (Desactivado para catálogo limpio)
   const loading = false;
@@ -247,6 +281,14 @@ export default function ProductCatalog({
       });
     }
 
+    // Filtrar por Plataforma (si aplica videojuego o búsqueda)
+    if (selectedPlatform !== 'all') {
+      list = list.filter(p => {
+        if (!p.platform) return false;
+        return p.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
+      });
+    }
+
     // Filtrar por Precio Máximo
     list = list.filter(p => p.price <= maxPrice);
 
@@ -277,6 +319,7 @@ export default function ProductCatalog({
     { id: 'sealed', label: 'Producto Sellado' },
     { id: 'single', label: 'Cartas Sueltas' },
     { id: 'accessory', label: 'Accesorios' },
+    { id: 'videogame', label: '🎮 Videojuegos y Consolas' },
   ];
 
   const pokemonTypes = ['Fire', 'Water', 'Grass', 'Lightning', 'Psychic', 'Fighting', 'Darkness', 'Metal', 'Dragon', 'Colorless'];
@@ -480,6 +523,36 @@ export default function ProductCatalog({
                   </select>
                 </div>
               </>
+            )}
+
+            {/* Filtrar por Plataforma (Videojuegos y Consolas) */}
+            {(selectedCategory === 'all' || selectedCategory === 'videogame') && (
+              <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                  Plataforma / Consola:
+                </label>
+                <select
+                  value={selectedPlatform}
+                  onChange={(e) => setSelectedPlatform(e.target.value)}
+                  style={{
+                    width: '100%',
+                    backgroundColor: 'var(--bg-body)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: 'white',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="all">Todas las Plataformas</option>
+                  <option value="Switch">Nintendo Switch</option>
+                  <option value="PlayStation">PlayStation (PS5 / PS4)</option>
+                  <option value="Xbox">Xbox Series / One</option>
+                  <option value="Retro">Retro (GB / GBA / DS / 3DS / N64)</option>
+                  <option value="Consolas">Consolas / Hardware</option>
+                </select>
+              </div>
             )}
 
             {/* Filtro de Precio Máximo */}

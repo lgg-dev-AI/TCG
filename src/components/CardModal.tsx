@@ -336,7 +336,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                   padding: '4px 10px',
                   borderRadius: '20px'
                 }}>
-                  {product.category === 'single' ? 'Carta Suelta' : 'Producto Sellado'}
+                  {product.category === 'single' ? 'Carta Suelta' : product.category === 'videogame' ? '🎮 Videojuego / Consola' : product.category === 'accessory' ? 'Accesorio' : 'Producto Sellado'}
                 </span>
                 {isSingle && cardData?.types && cardData.types.map(t => (
                   <span key={t} className={`type-badge type-${t.toLowerCase()}`}>
@@ -356,6 +356,54 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               }}>
                 {product.name}
               </h2>
+
+              {/* Atributos de Videojuegos */}
+              {product.category === 'videogame' && (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginBottom: '20px'
+                }}>
+                  {product.platform && (
+                    <span style={{
+                      fontSize: '11px',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: product.platform.toLowerCase().includes('switch') ? 'rgba(230, 0, 18, 0.2)' : product.platform.toLowerCase().includes('playstation') ? 'rgba(0, 55, 145, 0.25)' : product.platform.toLowerCase().includes('xbox') ? 'rgba(16, 124, 65, 0.25)' : 'rgba(147, 51, 234, 0.2)',
+                      color: product.platform.toLowerCase().includes('switch') ? '#ff5252' : product.platform.toLowerCase().includes('playstation') ? '#60a5fa' : product.platform.toLowerCase().includes('xbox') ? '#4ade80' : '#c084fc',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      fontWeight: 800
+                    }}>
+                      🎮 Plataforma: {product.platform}
+                    </span>
+                  )}
+                  {(product.completeness || product.cardCondition) && (
+                    <span style={{
+                      fontSize: '11px',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: 'rgba(52, 211, 153, 0.12)',
+                      color: '#34d399',
+                      border: '1px solid rgba(52, 211, 153, 0.25)',
+                      fontWeight: 700
+                    }}>
+                      📦 Estado: {product.completeness || product.cardCondition}
+                    </span>
+                  )}
+                  <span style={{
+                    fontSize: '11px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                    fontWeight: 600
+                  }}>
+                    ⚡ Probado y Funcionando 100%
+                  </span>
+                </div>
+              )}
 
               {/* Expansión / Rarity / Artista */}
               {isSingle && (

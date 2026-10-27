@@ -6,7 +6,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
-  category: 'booster_box' | 'etb' | 'blister' | 'single' | 'accessory';
+  category: 'booster_box' | 'etb' | 'blister' | 'single' | 'accessory' | 'videogame';
   image: string;
   description: string;
   stock: number;
@@ -18,6 +18,9 @@ export interface Product {
   cardCondition?: string;
   gameType?: string;
   galleryImages?: string[];
+  platform?: string; // Nintendo Switch, PS5, PS4, Xbox, Retro, etc.
+  completeness?: string; // CIB (Completo en Caja), Solo Cartucho/Disco, Sellado
+  isTournamentStaple?: boolean; // Carta clave para torneos competitivos
 }
 
 interface ProductItemProps {
@@ -329,6 +332,7 @@ export default function ProductItem({
             {product.category === 'etb' && 'Elite Trainer Box'}
             {product.category === 'blister' && 'Blister Pack'}
             {product.category === 'accessory' && 'Accesorio'}
+            {product.category === 'videogame' && (product.platform ? `🎮 ${product.platform}` : '🎮 Videojuego')}
             {product.category === 'single' && (product.expansion || 'Carta Suelta')}
           </span>
 
@@ -354,6 +358,38 @@ export default function ProductItem({
           >
             {product.name}
           </h3>
+
+          {/* Atributos de Videojuego (Plataforma y Estado) */}
+          {product.category === 'videogame' && (product.platform || product.completeness || product.cardCondition) && (
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              {product.platform && (
+                <span style={{
+                  fontSize: '9.5px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: product.platform.toLowerCase().includes('switch') ? 'rgba(230, 0, 18, 0.2)' : product.platform.toLowerCase().includes('playstation') ? 'rgba(0, 55, 145, 0.2)' : product.platform.toLowerCase().includes('xbox') ? 'rgba(16, 124, 65, 0.2)' : 'rgba(147, 51, 234, 0.2)',
+                  color: product.platform.toLowerCase().includes('switch') ? '#ff5252' : product.platform.toLowerCase().includes('playstation') ? '#60a5fa' : product.platform.toLowerCase().includes('xbox') ? '#4ade80' : '#c084fc',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  fontWeight: 800
+                }}>
+                  🎮 {product.platform}
+                </span>
+              )}
+              {(product.completeness || product.cardCondition) && (
+                <span style={{
+                  fontSize: '9.5px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: 'rgba(52, 211, 153, 0.12)',
+                  color: '#34d399',
+                  border: '1px solid rgba(52, 211, 153, 0.2)',
+                  fontWeight: 700
+                }}>
+                  📦 {product.completeness || product.cardCondition}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Atributos de carta suelta (Idioma y Condición) */}
           {isSingle && (product.region || product.cardCondition) && (
