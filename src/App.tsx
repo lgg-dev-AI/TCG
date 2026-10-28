@@ -578,15 +578,25 @@ export default function App() {
             <h2 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading)' }}>
               {searchQuery 
                 ? `Resultados para: "${searchQuery}"` 
-                : (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') 
-                  ? 'Catálogo One Piece Card Game' 
-                  : activeGame === 'POKEMON' 
-                    ? 'Catálogo Pokémon TCG' 
-                    : activeGame === 'YUGIOH' 
-                      ? 'Catálogo Yu-Gi-Oh!' 
-                      : activeGame === 'MAGIC' 
-                        ? 'Catálogo Magic: The Gathering' 
-                        : `Catálogo ${activeGame}`}
+                : catalogCategory === 'videogame'
+                  ? '🎮 Catálogo de Videojuegos & Consolas'
+                  : catalogCategory === 'accessory'
+                    ? '🛡️ Catálogo de Accesorios & Protección'
+                    : catalogCategory === 'deals'
+                      ? '🔥 Ofertas & Precios Bajos vs Mercado'
+                      : (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') 
+                        ? 'Catálogo One Piece Card Game' 
+                        : activeGame === 'POKEMON' 
+                          ? 'Catálogo Pokémon TCG' 
+                          : activeGame === 'YUGIOH' 
+                            ? 'Catálogo Yu-Gi-Oh!' 
+                            : activeGame === 'MAGIC' 
+                              ? 'Catálogo Magic: The Gathering' 
+                              : activeGame === 'LORCANA'
+                                ? 'Catálogo Disney Lorcana'
+                                : activeGame === 'DIGIMON'
+                                  ? 'Catálogo Digimon Card Game'
+                                  : `Catálogo ${activeGame}`}
             </h2>
             <ProductCatalog
               onAddToCart={handleAddToCart}

@@ -59,17 +59,32 @@ export default function ContentBar({
     }
 
     // Si el admin configuró categorías marcadas para la barra de contenido
-    const dynamicItems = customCategories
-      .filter(c => c.is_content_bar !== false)
-      .map(c => ({
+    const filtered = customCategories
+      .filter(c => c.is_content_bar !== false && (c.parent_id === null || c.parent_id === 'cat_tcg'));
+
+    const dynamicItems: ContentBarItem[] = filtered.map(c => {
+      const isVideogame = c.slug === 'videogames' || c.parent_id === 'cat_videogames';
+      const isAccessory = c.slug === 'accessories' || c.parent_id === 'cat_accessories';
+      return {
         id: c.id,
         name: c.name,
         slug: c.slug,
-        gameType: c.slug === 'onepiece' ? 'ONE_PIECE' : c.slug.toUpperCase(),
-        categoryFilter: c.slug === 'videogames' ? 'videogame' : c.slug === 'accessories' ? 'accessory' : undefined,
+        gameType: isVideogame || isAccessory ? undefined : (c.slug === 'onepiece' ? 'ONE_PIECE' : c.slug.toUpperCase()),
+        categoryFilter: isVideogame ? 'videogame' : isAccessory ? 'accessory' : undefined,
         iconName: c.icon,
         color: c.color,
-      }));
+      };
+    });
+
+    if (!dynamicItems.some(it => it.categoryFilter === 'videogame')) {
+      dynamicItems.push({ id: 'cb_videogames', name: 'Videojuegos & Consolas', slug: 'videogames', categoryFilter: 'videogame', iconName: 'Gamepad2', color: '#10b981' });
+    }
+    if (!dynamicItems.some(it => it.categoryFilter === 'accessory')) {
+      dynamicItems.push({ id: 'cb_accessories', name: 'Accesorios & Protección', slug: 'accessories', categoryFilter: 'accessory', iconName: 'ShieldCheck', color: '#6366f1' });
+    }
+    if (!dynamicItems.some(it => it.slug === 'deals')) {
+      dynamicItems.push({ id: 'cb_deals', name: 'Ofertas & Precios Bajos', slug: 'deals', iconName: 'Tag', color: '#ec4899', badge: 'OFERTAS' });
+    }
 
     return dynamicItems.length > 0 ? dynamicItems : DEFAULT_CONTENT_BAR_ITEMS;
   }, [customCategories]);

@@ -179,6 +179,7 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         is_content_bar INTEGER DEFAULT 1
       )`);
       db.run(`ALTER TABLE categories ADD COLUMN is_content_bar INTEGER DEFAULT 1`, () => {});
+      db.run(`UPDATE categories SET is_content_bar = 0 WHERE parent_id IN ('cat_videogames', 'cat_accessories')`, () => {});
 
       // Seedar categorías iniciales si la tabla está vacía
       db.get('SELECT COUNT(*) as count FROM categories', (err, row) => {

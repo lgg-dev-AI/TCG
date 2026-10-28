@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, AlertCircle, HelpCircle, TrendingUp } from 'lucide-react';
+import { 
+  Filter, HelpCircle, TrendingUp, 
+  Sparkles, Gamepad2, ShieldCheck, RotateCcw
+} from 'lucide-react';
 import ProductItem from './ProductItem';
 import type { Product } from './ProductItem';
 import ConditionGuideModal from './ConditionGuideModal';
@@ -29,221 +32,241 @@ export default function ProductCatalog({
   initialCategory,
   activeGame,
 }: ProductCatalogProps) {
-  // Filtros de navegación
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory || 'all');
+  // Estados de navegación por Pilares: 'tcg' | 'videogames' | 'accessories'
+  const [mainPillar, setMainPillar] = useState<'tcg' | 'videogames' | 'accessories'>('tcg');
 
-  useEffect(() => {
-    if (initialCategory) {
-      if (initialCategory === 'deals') {
-        setSelectedCategory('all');
-        setOnlyDealsFilter(true);
-      } else {
-        setSelectedCategory(initialCategory);
-        setOnlyDealsFilter(false);
-      }
-    }
-  }, [initialCategory]);
+  // Subfiltros TCG
+  const [tcgFormat, setTcgFormat] = useState<'all' | 'sealed' | 'single'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('default');
-  const [maxPrice, setMaxPrice] = useState<number>(100000);
-  const [expansionFilter, setExpansionFilter] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedCondition, setSelectedCondition] = useState<string>('all');
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
   const [selectedEdition, setSelectedEdition] = useState<string>('all');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
+  const [expansionFilter, setExpansionFilter] = useState<string>('');
+
+  // Subfiltros Videojuegos
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
+  const [selectedGameCondition, setSelectedGameCondition] = useState<string>('all'); // 'all', 'cib', 'sealed', 'loose'
+
+  // Subfiltros Accesorios ("Otros")
+  const [selectedAccessoryType, setSelectedAccessoryType] = useState<string>('all'); // 'all', 'sleeves', 'binders', 'toploaders', 'playmats', 'deckbox'
+
+  // Filtros Comunes
+  const [sortBy, setSortBy] = useState<string>('default');
+  const [maxPrice, setMaxPrice] = useState<number>(100000);
   const [onlyDealsFilter, setOnlyDealsFilter] = useState<boolean>(false);
   const [isConditionGuideOpen, setIsConditionGuideOpen] = useState<boolean>(false);
-  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
+  const [, setCategoriesList] = useState<CategoryItem[]>([]);
 
   useEffect(() => {
     apiGetCategories().then(setCategoriesList).catch(console.error);
   }, []);
 
-  // Estado para cartas API (Desactivado para catálogo limpio)
-  const loading = false;
-  const error = null;
-
-  // Cargar cartas sueltas desde la API (Desactivado para catálogo público limpio; solo se usa en Admin para agregar)
-  /*
+  // Sincronizar pilar inicial si viene de navegación externa
   useEffect(() => {
-    const loadCards = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await fetchCards(searchQuery);
-        setApiCards(result.data);
-      } catch (err) {
-        setError('Error al conectar con la API de Pokémon TCG. Mostrando productos locales.');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    if (initialCategory) {
+      if (initialCategory === 'deals') {
+        setMainPillar('tcg');
+        setTcgFormat('all');
+        setOnlyDealsFilter(true);
+      } else if (initialCategory === 'videogame' || initialCategory === 'videogames') {
+        setMainPillar('videogames');
+        setSelectedPlatform('all');
+        setOnlyDealsFilter(false);
+      } else if (initialCategory === 'accessory' || initialCategory === 'accessories') {
+        setMainPillar('accessories');
+        setSelectedAccessoryType('all');
+        setOnlyDealsFilter(false);
+      } else if (initialCategory === 'sealed') {
+        setMainPillar('tcg');
+        setTcgFormat('sealed');
+        setOnlyDealsFilter(false);
+      } else if (initialCategory === 'single') {
+        setMainPillar('tcg');
+        setTcgFormat('single');
+        setOnlyDealsFilter(false);
+      } else {
+        setMainPillar('tcg');
+        setTcgFormat('all');
+        setOnlyDealsFilter(false);
       }
-    };
-
-    if (selectedCategory === 'all' || selectedCategory === 'single' || searchQuery) {
-      loadCards();
     }
-  }, [searchQuery, selectedCategory]);
-  */
-
-  // Convertir cartas API en productos de la tienda
-  /*
-  const getApiProducts = (): Product[] => {
-    return apiCards.map((card) => {
-      // Convertir precio de mercado de USD a MXN (tipo de cambio simulado $17.50 MXN)
-      const marketPriceUsd = card.tcgplayer?.prices?.holofoil?.market || 
-                             card.tcgplayer?.prices?.normal?.market || 
-                             card.tcgplayer?.prices?.reverseHolofoil?.market || 
-                             5; // default $5 USD
-      
-      const priceMxn = Math.round(marketPriceUsd * 17.5);
-      
-      return {
-        id: `card_${card.id}`,
-        name: `${card.name} (${card.number}/${card.images.small.split('/').pop()?.split('.')[0] || ''})`,
-        price: priceMxn,
-        category: 'single',
-        image: card.images.small,
-        description: card.flavorText || `Carta Pokémon original de la expansión ${card.id.split('-')[0].toUpperCase()}. Rarity: ${card.rarity}. Ilustrado por ${card.artist || 'Artista Desconocido'}.`,
-        stock: Math.floor(Math.random() * 4) + 1, // Stock aleatorio entre 1 y 4 para realismo
-        expansion: card.id.split('-')[0].toUpperCase(),
-        pokemonCardData: card
-      };
-    });
-  };
-  */
+  }, [initialCategory]);
 
   // Combinar productos locales mockeados con productos de la API
   const getCombinedProducts = (): Product[] => {
-    let list: Product[] = [];
-
-    // Añadir productos de la base de datos (o mocks si aún no hay inventario en DB)
     const sourceProducts = inventory.length > 0 ? inventory : MOCK_PRODUCTS;
-    const filteredDB = sourceProducts.filter(p => {
-      if (selectedCategory === 'all') return true;
-      if (selectedCategory === 'sealed') return p.category === 'booster_box' || p.category === 'etb' || p.category === 'blister';
-      if (selectedCategory === 'single' || selectedCategory === 'accessory' || selectedCategory === 'videogame') {
-        return p.category === selectedCategory;
+
+    let list = sourceProducts.filter(p => {
+      // 1. Filtrado por Pilar Principal
+      if (mainPillar === 'tcg') {
+        // En TCG, excluir videojuegos y accesorios
+        if (p.category === 'videogame' || p.category === 'accessory') return false;
+
+        // Filtrar por juego TCG activo
+        if (activeGame && activeGame !== 'ALL') {
+          const g = (p.gameType || '').toUpperCase();
+          const targetG = activeGame.toUpperCase();
+          if (targetG === 'POKEMON') {
+            if (g !== 'POKEMON' && g !== '') return false;
+          } else if (targetG === 'ONE_PIECE' || targetG === 'ONEPIECE') {
+            if (g !== 'ONE_PIECE' && g !== 'ONEPIECE' && p.subCategory !== 'onepiece') return false;
+          } else if (targetG === 'YUGIOH') {
+            if (g !== 'YUGIOH' && p.subCategory !== 'yugioh') return false;
+          } else if (targetG === 'MAGIC') {
+            if (g !== 'MAGIC' && p.subCategory !== 'magic') return false;
+          } else if (targetG === 'LORCANA') {
+            if (g !== 'LORCANA' && p.subCategory !== 'lorcana') return false;
+          } else if (targetG === 'DIGIMON') {
+            if (g !== 'DIGIMON' && p.subCategory !== 'digimon') return false;
+          } else if (targetG === 'DRAGON_BALL' || targetG === 'DRAGONBALL') {
+            if (g !== 'DRAGON_BALL' && g !== 'DRAGONBALL') return false;
+          } else {
+            if (g !== targetG && p.subCategory !== targetG.toLowerCase()) return false;
+          }
+        }
+
+        // Subfiltro TCG: Sellado vs Sueltas
+        if (tcgFormat === 'sealed') {
+          if (p.category !== 'booster_box' && p.category !== 'etb' && p.category !== 'blister') return false;
+        } else if (tcgFormat === 'single') {
+          if (p.category !== 'single') return false;
+        }
+
+        return true;
       }
-      const catLower = selectedCategory.toLowerCase();
-      if (catLower === 'pokemon') return p.gameType === 'POKEMON' || p.subCategory === 'pokemon';
-      if (catLower === 'yugioh') return p.gameType === 'YUGIOH' || p.subCategory === 'yugioh';
-      if (catLower === 'magic') return p.gameType === 'MAGIC' || p.subCategory === 'magic';
-      if (catLower === 'onepiece' || catLower === 'one_piece') return p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE' || p.subCategory === 'onepiece';
-      return p.category === selectedCategory || p.subCategory === selectedCategory;
+
+      if (mainPillar === 'videogames') {
+        if (p.category !== 'videogame') return false;
+
+        // Subfiltro por plataforma
+        if (selectedPlatform !== 'all') {
+          const plat = (p.platform || '').toLowerCase();
+          const target = selectedPlatform.toLowerCase();
+          if (target === 'switch' && !plat.includes('switch')) return false;
+          if (target === 'playstation' && !plat.includes('playstation') && !plat.includes('ps5') && !plat.includes('ps4')) return false;
+          if (target === 'xbox' && !plat.includes('xbox')) return false;
+          if (target === 'retro' && !plat.includes('retro') && !plat.includes('gb') && !plat.includes('gba') && !plat.includes('n64') && !plat.includes('snes') && !plat.includes('ds')) return false;
+          if (target === 'consolas' && !plat.includes('consola') && !plat.includes('hardware')) return false;
+        }
+
+        // Subfiltro por completitud
+        if (selectedGameCondition !== 'all') {
+          const comp = (p.completeness || '').toLowerCase();
+          if (selectedGameCondition === 'sealed' && !comp.includes('sellado') && !comp.includes('nuevo')) return false;
+          if (selectedGameCondition === 'cib' && !comp.includes('cib') && !comp.includes('completo')) return false;
+          if (selectedGameCondition === 'loose' && !comp.includes('loose') && !comp.includes('suelto')) return false;
+        }
+
+        return true;
+      }
+
+      if (mainPillar === 'accessories') {
+        if (p.category !== 'accessory') return false;
+
+        if (selectedAccessoryType !== 'all') {
+          const nameLower = (p.name || '').toLowerCase();
+          const descLower = (p.description || '').toLowerCase();
+          const subLower = (p.subCategory || '').toLowerCase();
+
+          if (selectedAccessoryType === 'sleeves') {
+            const isMatch = subLower === 'sleeves' || nameLower.includes('mica') || nameLower.includes('sleeve') || descLower.includes('sleeve');
+            if (!isMatch) return false;
+          } else if (selectedAccessoryType === 'binders') {
+            const isMatch = subLower === 'binders' || nameLower.includes('carpeta') || nameLower.includes('binder') || descLower.includes('binder');
+            if (!isMatch) return false;
+          } else if (selectedAccessoryType === 'toploaders') {
+            const isMatch = subLower === 'toploaders' || nameLower.includes('toploader') || nameLower.includes('acrílic') || nameLower.includes('caja protectora');
+            if (!isMatch) return false;
+          } else if (selectedAccessoryType === 'playmats') {
+            const isMatch = subLower === 'playmats' || nameLower.includes('playmat') || nameLower.includes('tapete') || descLower.includes('tapete');
+            if (!isMatch) return false;
+          } else if (selectedAccessoryType === 'deckbox') {
+            const isMatch = subLower === 'deckbox' || nameLower.includes('deck') || nameLower.includes('dado') || nameLower.includes('contador') || descLower.includes('deck box');
+            if (!isMatch) return false;
+          }
+        }
+
+        return true;
+      }
+
+      return true;
     });
-    list = [...list, ...filteredDB];
 
-    // Añadir cartas de la API si la categoría aplica (Desactivado para catálogo público limpio)
-    /*
-    if (selectedCategory === 'all' || selectedCategory === 'single') {
-      list = [...list, ...getApiProducts()];
-    }
-    */
-
-    // Filtrar localmente por búsqueda si es producto sellado (las cartas ya se filtraron en API)
+    // 2. Filtro de búsqueda textual
     if (searchQuery) {
-      list = list.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      const q = searchQuery.toLowerCase();
+      list = list.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.expansion && p.expansion.toLowerCase().includes(q))
+      );
     }
 
-    // Filtrar por Subcategoría Dinámica (prioridad cuando el usuario elige una línea/TCG específica)
-    if (selectedSubCategory !== 'all') {
-      list = list.filter(p => {
-        const pSub = (p.subCategory || '').toLowerCase();
-        const targetSub = selectedSubCategory.toLowerCase();
-        if (pSub === targetSub) return true;
-        // Mapeo inteligente para Pokémon TCG
-        if (targetSub === 'pokemon' && (p.gameType === 'POKEMON' || (!p.gameType && p.category !== 'videogame' && p.category !== 'accessory'))) return true;
-        // Mapeo inteligente para Yu-Gi-Oh!
-        if (targetSub === 'yugioh' && p.gameType === 'YUGIOH') return true;
-        // Mapeo inteligente para Magic: The Gathering
-        if (targetSub === 'magic' && p.gameType === 'MAGIC') return true;
-        // Mapeo inteligente para One Piece Card Game
-        if ((targetSub === 'onepiece' || targetSub === 'one_piece') && (p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE')) return true;
-        // Mapeo para videojuegos
-        if (targetSub === 'switch' && p.platform?.toLowerCase().includes('switch')) return true;
-        if (targetSub === 'playstation' && p.platform?.toLowerCase().includes('playstation')) return true;
-        if (targetSub === 'xbox' && p.platform?.toLowerCase().includes('xbox')) return true;
-        if (targetSub === 'retro' && p.platform?.toLowerCase().includes('retro')) return true;
-        // Mapeo para accesorios
-        if (targetSub === 'sleeves' && (p.category === 'accessory' && (p.name.toLowerCase().includes('mica') || p.name.toLowerCase().includes('sleeve')))) return true;
-        if (targetSub === 'binders' && (p.category === 'accessory' && (p.name.toLowerCase().includes('carpeta') || p.name.toLowerCase().includes('binder')))) return true;
-        if (targetSub === 'toploaders' && (p.category === 'accessory' && (p.name.toLowerCase().includes('toploader') || p.name.toLowerCase().includes('acrílic')))) return true;
-        if (targetSub === 'playmats' && (p.category === 'accessory' && (p.name.toLowerCase().includes('playmat') || p.name.toLowerCase().includes('tapete')))) return true;
-        return false;
-      });
-    } else if (activeGame && activeGame !== 'ALL' && selectedCategory !== 'videogame' && selectedCategory !== 'accessory') {
-      // Si no se eligió subcategoría específica, respetar el TCG activo de la barra superior
-      list = list.filter(p => {
-        if (activeGame === 'POKEMON') return p.gameType === 'POKEMON' || p.subCategory === 'pokemon' || (!p.gameType && p.category !== 'videogame' && p.category !== 'accessory');
-        if (activeGame === 'YUGIOH') return p.gameType === 'YUGIOH' || p.subCategory === 'yugioh';
-        if (activeGame === 'MAGIC') return p.gameType === 'MAGIC' || p.subCategory === 'magic';
-        if (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') return p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE' || p.subCategory === 'onepiece';
-        return true;
-      });
+    // 3. Filtro por Expansión
+    if (expansionFilter) {
+      const ef = expansionFilter.toLowerCase();
+      list = list.filter(p => p.expansion && p.expansion.toLowerCase().includes(ef));
     }
 
-    // Filtrar por Región / Idioma (solo aplica para cartas sueltas)
-    if (selectedRegion !== 'all') {
-      list = list.filter(p => {
-        if (p.category !== 'single') return true;
-        const reg = p.region || 'Inglés (USA)';
-        return reg.toLowerCase().includes(selectedRegion.toLowerCase());
-      });
-    }
-
-    // Filtrar por Condición (solo aplica para cartas sueltas)
-    if (selectedCondition !== 'all') {
-      list = list.filter(p => {
-        if (p.category !== 'single') return true;
-        const cond = p.cardCondition || 'NM';
-        return cond.toLowerCase() === selectedCondition.toLowerCase();
-      });
-    }
-
-    // Filtrar por Edición (1ª Edición vs Ilimitada / Regular)
-    if (selectedEdition !== 'all') {
-      list = list.filter(p => {
-        if (p.category !== 'single') return true;
-        if (selectedEdition === 'first_edition') return !!p.isFirstEdition;
-        if (selectedEdition === 'unlimited') return !p.isFirstEdition;
-        return true;
-      });
-    }
-
-    // Filtrar por Plataforma (si aplica videojuego o búsqueda)
-    if (selectedPlatform !== 'all') {
-      list = list.filter(p => {
-        if (!p.platform) return false;
-        return p.platform.toLowerCase().includes(selectedPlatform.toLowerCase());
-      });
-    }
-
-    // Filtrar por Ofertas vs Mercado
+    // 4. Filtro por Ofertas
     if (onlyDealsFilter) {
-      list = list.filter(p => {
-        const effectiveMarket = p.marketPrice || 0;
-        return effectiveMarket > p.price;
-      });
+      list = list.filter(p => p.marketPrice && p.price < p.marketPrice);
     }
 
-    // Filtrar por Precio Máximo
+    // 5. Filtros específicos de TCG
+    if (mainPillar === 'tcg') {
+      if (selectedType !== 'all') {
+        list = list.filter(p => {
+          if (p.category !== 'single') return true;
+          const card = p.pokemonCardData;
+          return card?.types?.includes(selectedType) || false;
+        });
+      }
+
+      if (selectedRarity !== 'all') {
+        list = list.filter(p => {
+          if (p.category !== 'single') return true;
+          const rar = (p.pokemonCardData?.rarity || '').toLowerCase();
+          if (selectedRarity === 'rare') return rar.includes('rare') || rar.includes('holo') || rar.includes('secret') || rar.includes('ultra');
+          if (selectedRarity === 'uncommon') return rar.includes('uncommon');
+          if (selectedRarity === 'common') return rar.includes('common');
+          return true;
+        });
+      }
+
+      if (selectedRegion !== 'all') {
+        list = list.filter(p => {
+          if (p.category !== 'single') return true;
+          const reg = p.region || 'Inglés (USA)';
+          return reg.toLowerCase().includes(selectedRegion.toLowerCase());
+        });
+      }
+
+      if (selectedCondition !== 'all') {
+        list = list.filter(p => {
+          if (p.category !== 'single') return true;
+          const cond = p.cardCondition || 'NM';
+          return cond.toLowerCase() === selectedCondition.toLowerCase();
+        });
+      }
+
+      if (selectedEdition !== 'all') {
+        list = list.filter(p => {
+          if (p.category !== 'single') return true;
+          if (selectedEdition === 'first_edition') return !!p.isFirstEdition;
+          if (selectedEdition === 'unlimited') return !p.isFirstEdition;
+          return true;
+        });
+      }
+    }
+
+    // 6. Filtro de Precio Máximo
     if (maxPrice < 100000) {
       list = list.filter(p => p.price <= maxPrice);
     }
 
-    // Filtrar por Expansión (nombre parcial)
-    if (expansionFilter.trim()) {
-      list = list.filter(p =>
-        p.expansion?.toLowerCase().includes(expansionFilter.toLowerCase()) ||
-        p.name.toLowerCase().includes(expansionFilter.toLowerCase())
-      );
-    }
-
-    // Aplicar ordenamiento
+    // 7. Ordenamiento
     if (sortBy === 'price_asc') {
       list.sort((a, b) => a.price - b.price);
     } else if (sortBy === 'price_desc') {
@@ -257,14 +280,6 @@ export default function ProductCatalog({
 
   const filteredProducts = getCombinedProducts();
 
-  const categories = [
-    { id: 'all', label: 'Todo' },
-    { id: 'sealed', label: 'Producto Sellado' },
-    { id: 'single', label: 'Cartas Sueltas' },
-    { id: 'accessory', label: 'Accesorios' },
-    { id: 'videogame', label: '🎮 Videojuegos y Consolas' },
-  ];
-
   const pokemonTypes = ['Fire', 'Water', 'Grass', 'Lightning', 'Psychic', 'Fighting', 'Darkness', 'Metal', 'Dragon', 'Colorless'];
   const magicColors = ['White', 'Blue', 'Black', 'Red', 'Green', 'Colorless'];
   const yugiohAttributes = ['DARK', 'LIGHT', 'EARTH', 'WATER', 'FIRE', 'WIND', 'DIVINE'];
@@ -272,45 +287,236 @@ export default function ProductCatalog({
   const currentTypes = activeGame === 'MAGIC' ? magicColors : activeGame === 'YUGIOH' ? yugiohAttributes : pokemonTypes;
   const currentTypeLabel = activeGame === 'MAGIC' ? 'Color de Maná' : activeGame === 'YUGIOH' ? 'Atributo' : 'Tipo de Pokémon';
 
+  const resetAllFilters = () => {
+    setMainPillar('tcg');
+    setTcgFormat('all');
+    setSelectedPlatform('all');
+    setSelectedAccessoryType('all');
+    setSelectedType('all');
+    setSelectedRarity('all');
+    setSelectedRegion('all');
+    setSelectedCondition('all');
+    setSelectedEdition('all');
+    setMaxPrice(100000);
+    setExpansionFilter('');
+    setOnlyDealsFilter(false);
+  };
+
   return (
     <div style={{ paddingBottom: '60px' }}>
-      {/* Selector de Categorías (Botones Rápidos) */}
+      {/* ============================================================== */}
+      {/* 3 GRANDES PILARES: TCG vs VIDEOJUEGOS vs ACCESORIOS */}
+      {/* ============================================================== */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '12px',
+        marginBottom: '16px',
+      }}>
+        <button
+          onClick={() => {
+            setMainPillar('tcg');
+            setTcgFormat('all');
+          }}
+          className="btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            backgroundColor: mainPillar === 'tcg' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
+            color: '#ffffff',
+            border: mainPillar === 'tcg' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: mainPillar === 'tcg' ? '0 4px 14px rgba(255, 62, 62, 0.35)' : 'none'
+          }}
+        >
+          <Sparkles size={16} color={mainPillar === 'tcg' ? '#fff' : '#ffcb05'} />
+          <span>🃏 TCG & Cartas Coleccionables</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setMainPillar('videogames');
+            setSelectedPlatform('all');
+          }}
+          className="btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            backgroundColor: mainPillar === 'videogames' ? '#2563eb' : 'rgba(255, 255, 255, 0.04)',
+            color: '#ffffff',
+            border: mainPillar === 'videogames' ? '1px solid #3b82f6' : '1px solid var(--border-color)',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: mainPillar === 'videogames' ? '0 4px 14px rgba(37, 99, 235, 0.35)' : 'none'
+          }}
+        >
+          <Gamepad2 size={16} color={mainPillar === 'videogames' ? '#fff' : '#60a5fa'} />
+          <span>🎮 Videojuegos & Consolas</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setMainPillar('accessories');
+            setSelectedAccessoryType('all');
+          }}
+          className="btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            backgroundColor: mainPillar === 'accessories' ? '#059669' : 'rgba(255, 255, 255, 0.04)',
+            color: '#ffffff',
+            border: mainPillar === 'accessories' ? '1px solid #10b981' : '1px solid var(--border-color)',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 800,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: mainPillar === 'accessories' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none'
+          }}
+        >
+          <ShieldCheck size={16} color={mainPillar === 'accessories' ? '#fff' : '#34d399'} />
+          <span>🛡️ Accesorios & Protección</span>
+        </button>
+      </div>
+
+      {/* ============================================================== */}
+      {/* SUB-PILLS ESPECÍFICOS SEGÚN EL PILAR ACTIVO */}
+      {/* ============================================================== */}
       <div style={{
         display: 'flex',
-        gap: '12px',
+        gap: '8px',
         overflowX: 'auto',
-        paddingBottom: '16px',
-        marginBottom: '24px',
+        paddingBottom: '14px',
+        marginBottom: '20px',
         borderBottom: '1px solid var(--border-color)',
-        scrollbarWidth: 'none',
+        scrollbarWidth: 'none'
       }}>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => {
-              setSelectedCategory(cat.id);
-              // Resetear filtros específicos si cambia de categoría
-              if (cat.id !== 'single' && cat.id !== 'all') {
-                setSelectedType('all');
-                setSelectedRarity('all');
-                setSelectedRegion('all');
-                setSelectedCondition('all');
-                setSelectedEdition('all');
-              }
-            }}
-            className="btn"
-            style={{
-              backgroundColor: selectedCategory === cat.id ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
-              color: '#ffffff',
-              whiteSpace: 'nowrap',
-              border: selectedCategory === cat.id ? 'none' : '1px solid var(--border-color)',
-              padding: '8px 16px',
-              fontSize: '13px'
-            }}
-          >
-            {cat.label}
-          </button>
-        ))}
+        {/* SUB-PILLS PILAR 1: TCG */}
+        {mainPillar === 'tcg' && (
+          <>
+            <button
+              onClick={() => setTcgFormat('all')}
+              style={{
+                backgroundColor: tcgFormat === 'all' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                color: '#fff',
+                border: tcgFormat === 'all' ? 'none' : '1px solid var(--border-color)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12.5px',
+                fontWeight: tcgFormat === 'all' ? 700 : 500,
+                cursor: 'pointer'
+              }}
+            >
+              Todo TCG
+            </button>
+            <button
+              onClick={() => setTcgFormat('sealed')}
+              style={{
+                backgroundColor: tcgFormat === 'sealed' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                color: '#fff',
+                border: tcgFormat === 'sealed' ? 'none' : '1px solid var(--border-color)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12.5px',
+                fontWeight: tcgFormat === 'sealed' ? 700 : 500,
+                cursor: 'pointer'
+              }}
+            >
+              📦 Producto Sellado (Booster Boxes / ETBs / Blisters)
+            </button>
+            <button
+              onClick={() => setTcgFormat('single')}
+              style={{
+                backgroundColor: tcgFormat === 'single' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                color: '#fff',
+                border: tcgFormat === 'single' ? 'none' : '1px solid var(--border-color)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12.5px',
+                fontWeight: tcgFormat === 'single' ? 700 : 500,
+                cursor: 'pointer'
+              }}
+            >
+              🃏 Cartas Sueltas (Singles)
+            </button>
+          </>
+        )}
+
+        {/* SUB-PILLS PILAR 2: VIDEOJUEGOS */}
+        {mainPillar === 'videogames' && (
+          [
+            { id: 'all', label: '🎮 Todos los Videojuegos' },
+            { id: 'switch', label: '🔴 Nintendo Switch' },
+            { id: 'playstation', label: '🔵 PlayStation (PS5 / PS4)' },
+            { id: 'xbox', label: '🟢 Xbox Series & One' },
+            { id: 'retro', label: '🕹️ Retro Gaming (GB / N64 / SNES)' },
+            { id: 'consolas', label: '⚡ Consolas & Hardware' }
+          ].map(p => (
+            <button
+              key={p.id}
+              onClick={() => setSelectedPlatform(p.id)}
+              style={{
+                backgroundColor: selectedPlatform === p.id ? '#2563eb' : 'rgba(255, 255, 255, 0.05)',
+                color: '#fff',
+                border: selectedPlatform === p.id ? 'none' : '1px solid var(--border-color)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12.5px',
+                fontWeight: selectedPlatform === p.id ? 700 : 500,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {p.label}
+            </button>
+          ))
+        )}
+
+        {/* SUB-PILLS PILAR 3: ACCESORIOS */}
+        {mainPillar === 'accessories' && (
+          [
+            { id: 'all', label: '🛡️ Todos los Accesorios' },
+            { id: 'sleeves', label: '✨ Micas & Protectores (Sleeves)' },
+            { id: 'binders', label: '📁 Carpetas & Portafolios (Binders)' },
+            { id: 'toploaders', label: '📦 Toploaders & Cajas Acrílicas' },
+            { id: 'playmats', label: '🎯 Playmats & Tapetes Oficiales' },
+            { id: 'deckbox', label: '🎲 Deck Boxes & Dados' }
+          ].map(a => (
+            <button
+              key={a.id}
+              onClick={() => setSelectedAccessoryType(a.id)}
+              style={{
+                backgroundColor: selectedAccessoryType === a.id ? '#059669' : 'rgba(255, 255, 255, 0.05)',
+                color: '#fff',
+                border: selectedAccessoryType === a.id ? 'none' : '1px solid var(--border-color)',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '12.5px',
+                fontWeight: selectedAccessoryType === a.id ? 700 : 500,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {a.label}
+            </button>
+          ))
+        )}
       </div>
 
       <div style={{
@@ -318,7 +524,9 @@ export default function ProductCatalog({
         gridTemplateColumns: '1fr',
         gap: '30px',
       }} className="catalog-layout">
-        {/* Filtros Sidebar / Topbar */}
+        {/* ============================================================== */}
+        {/* FILTROS SIDEBAR / TOPBAR CONTEXTUALES */}
+        {/* ============================================================== */}
         <div className="glass" style={{
           padding: '20px',
           borderRadius: '12px',
@@ -336,10 +544,16 @@ export default function ProductCatalog({
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Filter size={18} style={{ color: 'var(--primary)' }} />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0 }}>Filtros</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0 }}>
+                {mainPillar === 'videogames' 
+                  ? 'Filtros Videojuegos' 
+                  : mainPillar === 'accessories' 
+                    ? 'Filtros Protección' 
+                    : 'Filtros TCG'}
+              </h3>
             </div>
 
-            {/* Acciones Rápidas TCGplayer & Ofertas de Mercado */}
+            {/* Acciones Rápidas */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -360,28 +574,30 @@ export default function ProductCatalog({
                 }}
               >
                 <TrendingUp size={14} color={onlyDealsFilter ? '#34d399' : '#ffcb05'} />
-                {onlyDealsFilter ? '🔥 Mostrando Ofertas vs Mercado' : '🔥 Ver Ofertas vs Mercado'}
+                {onlyDealsFilter ? '🔥 Ofertas Activas' : '🔥 Ver Ofertas'}
               </button>
 
-              <button
-                type="button"
-                onClick={() => setIsConditionGuideOpen(true)}
-                className="btn"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid var(--border-color)',
-                  color: '#fff',
-                  fontSize: '12px',
-                  padding: '6px 12px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  borderRadius: '8px'
-                }}
-              >
-                <HelpCircle size={14} color="#ffcb05" /> Guía de Estados (NM, LP...)
-              </button>
+              {mainPillar === 'tcg' && (
+                <button
+                  type="button"
+                  onClick={() => setIsConditionGuideOpen(true)}
+                  className="btn"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid var(--border-color)',
+                    color: '#fff',
+                    fontSize: '12px',
+                    padding: '6px 12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    borderRadius: '8px'
+                  }}
+                >
+                  <HelpCircle size={14} color="#ffcb05" /> Guía (NM, LP...)
+                </button>
+              )}
             </div>
           </div>
 
@@ -412,16 +628,179 @@ export default function ProductCatalog({
               </select>
             </div>
 
-            {/* Filtrar por tipo (Solo si se muestran cartas) */}
-            {(selectedCategory === 'all' || selectedCategory === 'single') && (
+            {/* FILTROS ESPECÍFICOS DE TCG */}
+            {mainPillar === 'tcg' && (
+              <>
+                {(tcgFormat === 'all' || tcgFormat === 'single') && (
+                  <>
+                    <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                        {currentTypeLabel}:
+                      </label>
+                      <select
+                        value={selectedType}
+                        onChange={(e) => setSelectedType(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: 'var(--bg-body)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">Todos los {activeGame === 'MAGIC' ? 'Colores' : 'Tipos'}</option>
+                        {currentTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                        Rareza:
+                      </label>
+                      <select
+                        value={selectedRarity}
+                        onChange={(e) => setSelectedRarity(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: 'var(--bg-body)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">Todas las Rarezas</option>
+                        <option value="rare">Rara / Holo / Secret</option>
+                        <option value="uncommon">Infrecuente (Uncommon)</option>
+                        <option value="common">Común (Common)</option>
+                      </select>
+                    </div>
+
+                    <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                        Idioma / Región:
+                      </label>
+                      <select
+                        value={selectedRegion}
+                        onChange={(e) => setSelectedRegion(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: 'var(--bg-body)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">Todos los Idiomas</option>
+                        <option value="inglés">Inglés</option>
+                        <option value="japonés">Japonés</option>
+                        <option value="español">Español</option>
+                      </select>
+                    </div>
+
+                    <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                        Condición:
+                      </label>
+                      <select
+                        value={selectedCondition}
+                        onChange={(e) => setSelectedCondition(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: 'var(--bg-body)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">Todas las Condiciones</option>
+                        <option value="NM">Near Mint (NM)</option>
+                        <option value="LP">Lightly Played (LP)</option>
+                        <option value="MP">Moderately Played (MP)</option>
+                        <option value="HP">Heavily Played (HP)</option>
+                      </select>
+                    </div>
+
+                    <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                        Edición de Carta:
+                      </label>
+                      <select
+                        value={selectedEdition}
+                        onChange={(e) => setSelectedEdition(e.target.value)}
+                        style={{
+                          width: '100%',
+                          backgroundColor: 'var(--bg-body)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                          color: 'white',
+                          padding: '8px 12px',
+                          fontSize: '13px',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="all">Todas las Ediciones</option>
+                        <option value="first_edition">⭐ Solo 1ª Edición (1st Edition)</option>
+                        <option value="unlimited">Ilimitada / Regular (Unlimited)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {/* Filtro de Expansión TCG */}
+                <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                    Expansión / Set:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ej. 151, Paldea, OP-05..."
+                    value={expansionFilter}
+                    onChange={(e) => setExpansionFilter(e.target.value)}
+                    style={{
+                      width: '100%',
+                      backgroundColor: 'var(--bg-body)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      color: 'white',
+                      padding: '8px 12px',
+                      fontSize: '13px',
+                      outline: 'none'
+                    }}
+                  />
+                  {expansionFilter && (
+                    <button onClick={() => setExpansionFilter('')}
+                      style={{ fontSize: '11px', marginTop: '4px', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
+                    >× Limpiar
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* FILTROS ESPECÍFICOS DE VIDEOJUEGOS */}
+            {mainPillar === 'videogames' && (
               <>
                 <div style={{ minWidth: '180px', flexGrow: 1 }}>
                   <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                    {currentTypeLabel}:
+                    Plataforma / Consola:
                   </label>
                   <select
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
+                    value={selectedPlatform}
+                    onChange={(e) => setSelectedPlatform(e.target.value)}
                     style={{
                       width: '100%',
                       backgroundColor: 'var(--bg-body)',
@@ -433,20 +812,22 @@ export default function ProductCatalog({
                       outline: 'none'
                     }}
                   >
-                    <option value="all">Todos los {activeGame === 'MAGIC' ? 'Colores' : 'Tipos'}</option>
-                    {currentTypes.map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
+                    <option value="all">Todas las Plataformas</option>
+                    <option value="switch">Nintendo Switch</option>
+                    <option value="playstation">PlayStation (PS5 / PS4)</option>
+                    <option value="xbox">Xbox Series & One</option>
+                    <option value="retro">Retro Gaming (GB / N64 / SNES)</option>
+                    <option value="consolas">Consolas & Hardware</option>
                   </select>
                 </div>
 
                 <div style={{ minWidth: '180px', flexGrow: 1 }}>
                   <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                    Rareza:
+                    Estado / Completitud:
                   </label>
                   <select
-                    value={selectedRarity}
-                    onChange={(e) => setSelectedRarity(e.target.value)}
+                    value={selectedGameCondition}
+                    onChange={(e) => setSelectedGameCondition(e.target.value)}
                     style={{
                       width: '100%',
                       backgroundColor: 'var(--bg-body)',
@@ -458,99 +839,24 @@ export default function ProductCatalog({
                       outline: 'none'
                     }}
                   >
-                    <option value="all">Todas las Rarezas</option>
-                    <option value="rare">Rara / Holo / Secret</option>
-                    <option value="uncommon">Infrecuente (Uncommon)</option>
-                    <option value="common">Común (Common)</option>
-                  </select>
-                </div>
-
-                <div style={{ minWidth: '180px', flexGrow: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                    Idioma / Región:
-                  </label>
-                  <select
-                    value={selectedRegion}
-                    onChange={(e) => setSelectedRegion(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--bg-body)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      color: 'white',
-                      padding: '8px 12px',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="all">Todos los Idiomas</option>
-                    <option value="inglés">Inglés</option>
-                    <option value="japonés">Japonés</option>
-                    <option value="español">Español</option>
-                  </select>
-                </div>
-
-                <div style={{ minWidth: '180px', flexGrow: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                    Condición:
-                  </label>
-                  <select
-                    value={selectedCondition}
-                    onChange={(e) => setSelectedCondition(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--bg-body)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      color: 'white',
-                      padding: '8px 12px',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="all">Todas las Condiciones</option>
-                    <option value="NM">Near Mint (NM)</option>
-                    <option value="LP">Lightly Played (LP)</option>
-                    <option value="MP">Moderately Played (MP)</option>
-                    <option value="HP">Heavily Played (HP)</option>
-                  </select>
-                </div>
-
-                <div style={{ minWidth: '180px', flexGrow: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                    Edición de Carta:
-                  </label>
-                  <select
-                    value={selectedEdition}
-                    onChange={(e) => setSelectedEdition(e.target.value)}
-                    style={{
-                      width: '100%',
-                      backgroundColor: 'var(--bg-body)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      color: 'white',
-                      padding: '8px 12px',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="all">Todas las Ediciones</option>
-                    <option value="first_edition">⭐ Solo 1ª Edición (1st Edition)</option>
-                    <option value="unlimited">Ilimitada / Regular (Unlimited)</option>
+                    <option value="all">Todos los Estados</option>
+                    <option value="sealed">Nuevo Sellado de Fábrica</option>
+                    <option value="cib">Completo en Caja Original (CIB)</option>
+                    <option value="loose">Solo Cartucho / Disco (Loose)</option>
                   </select>
                 </div>
               </>
             )}
 
-            {/* Filtrar por Plataforma (Videojuegos y Consolas) */}
-            {(selectedCategory === 'all' || selectedCategory === 'videogame') && (
+            {/* FILTROS ESPECÍFICOS DE ACCESORIOS */}
+            {mainPillar === 'accessories' && (
               <div style={{ minWidth: '180px', flexGrow: 1 }}>
                 <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                  Plataforma / Consola:
+                  Tipo de Accesorio:
                 </label>
                 <select
-                  value={selectedPlatform}
-                  onChange={(e) => setSelectedPlatform(e.target.value)}
+                  value={selectedAccessoryType}
+                  onChange={(e) => setSelectedAccessoryType(e.target.value)}
                   style={{
                     width: '100%',
                     backgroundColor: 'var(--bg-body)',
@@ -562,45 +868,17 @@ export default function ProductCatalog({
                     outline: 'none'
                   }}
                 >
-                  <option value="all">Todas las Plataformas</option>
-                  <option value="Switch">Nintendo Switch</option>
-                  <option value="PlayStation">PlayStation (PS5 / PS4)</option>
-                  <option value="Xbox">Xbox Series / One</option>
-                  <option value="Retro">Retro (GB / GBA / DS / 3DS / N64)</option>
-                  <option value="Consolas">Consolas / Hardware</option>
+                  <option value="all">Todos los Accesorios</option>
+                  <option value="sleeves">Micas & Protectores (Sleeves)</option>
+                  <option value="binders">Carpetas & Portafolios (Binders)</option>
+                  <option value="toploaders">Toploaders & Cajas Acrílicas</option>
+                  <option value="playmats">Playmats & Tapetes Oficiales</option>
+                  <option value="deckbox">Deck Boxes, Cajas & Dados</option>
                 </select>
               </div>
             )}
 
-            {/* Filtro por Subcategoría Dinámica */}
-            {categoriesList.filter(c => c.parent_id).length > 0 && (
-              <div style={{ minWidth: '180px', flexGrow: 1 }}>
-                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                  Subcategoría / Línea:
-                </label>
-                <select
-                  value={selectedSubCategory}
-                  onChange={(e) => setSelectedSubCategory(e.target.value)}
-                  style={{
-                    width: '100%',
-                    backgroundColor: 'var(--bg-body)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '6px',
-                    color: 'white',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    outline: 'none'
-                  }}
-                >
-                  <option value="all">Todas las Subcategorías</option>
-                  {categoriesList.filter(c => c.parent_id).map(sub => (
-                    <option key={sub.id} value={sub.slug}>{sub.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Filtro de Precio Máximo */}
+            {/* Filtro de Precio Máximo Común */}
             <div style={{ minWidth: '200px', flexGrow: 1 }}>
               <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
                 Precio Máximo: <span style={{ color: 'var(--secondary)', fontWeight: 800 }}>{maxPrice >= 100000 ? 'Sin Límite ($100k+ MXN)' : `$${maxPrice.toLocaleString('es-MX')} MXN`}</span>
@@ -630,109 +908,69 @@ export default function ProductCatalog({
                 <span>$100k+</span>
               </div>
             </div>
-
-            {/* Filtro de Expansión */}
-            <div style={{ minWidth: '180px', flexGrow: 1 }}>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                Expansión / Set:
-              </label>
-              <input
-                type="text"
-                placeholder="ej. Twilight, 151, Paldea..."
-                value={expansionFilter}
-                onChange={(e) => setExpansionFilter(e.target.value)}
-                style={{
-                  width: '100%',
-                  backgroundColor: 'var(--bg-body)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  color: 'white',
-                  padding: '8px 12px',
-                  fontSize: '13px',
-                  outline: 'none'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
-              />
-              {expansionFilter && (
-                <button onClick={() => setExpansionFilter('')}
-                  style={{ fontSize: '11px', marginTop: '4px', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: 0 }}
-                >× Limpiar
-                </button>
-              )}
-            </div>
           </div>
         </div>
 
-        {/* Listado de Productos */}
+        {/* ============================================================== */}
+        {/* LISTADO DE PRODUCTOS O ESTADO VACÍO ELEGANTE */}
+        {/* ============================================================== */}
         <div>
-          {/* Mensajes de error API */}
-          {error && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              backgroundColor: 'rgba(255, 62, 62, 0.1)',
-              border: '1px solid rgba(255, 62, 62, 0.3)',
-              color: '#ff6b6b',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              marginBottom: '24px',
-              fontSize: '14px'
-            }}>
-              <AlertCircle size={18} />
-              {error}
-            </div>
-          )}
-
-          {/* Cargando (Skeletons) */}
-          {loading ? (
-            <div className="products-grid">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className="glass" 
-                  style={{
-                    borderRadius: '12px',
-                    padding: '16px',
-                    height: '380px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{
-                    width: '100%',
-                    aspectRatio: '2.5/3.5',
-                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                    borderRadius: '8px',
-                    animation: 'pulse 1.5s infinite alternate'
-                  }} />
-                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ width: '40%', height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '4px', animation: 'pulse 1.5s infinite alternate' }} />
-                    <div style={{ width: '80%', height: '15px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '4px', animation: 'pulse 1.5s infinite alternate' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-                      <div style={{ width: '30%', height: '18px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '4px', animation: 'pulse 1.5s infinite alternate' }} />
-                      <div style={{ width: '25%', height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '4px', animation: 'pulse 1.5s infinite alternate' }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            /* Resultados Vacíos */
+          {filteredProducts.length === 0 ? (
+            /* Resultados Vacíos Amigables y Claros */
             <div style={{
               textAlign: 'center',
-              padding: '60px 20px',
-              backgroundColor: 'rgba(255,255,255,0.02)',
-              borderRadius: '12px',
-              border: '1px dashed var(--border-color)'
+              padding: '60px 24px',
+              backgroundColor: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '16px',
+              border: '1px dashed rgba(255, 255, 255, 0.12)',
+              margin: '20px 0'
             }}>
-              <Search size={40} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No se encontraron productos</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                Prueba buscando otros términos o cambiando los filtros seleccionados.
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto',
+                color: '#ffcb05'
+              }}>
+                {mainPillar === 'videogames' ? (
+                  <Gamepad2 size={32} />
+                ) : mainPillar === 'accessories' ? (
+                  <ShieldCheck size={32} />
+                ) : (
+                  <Sparkles size={32} />
+                )}
+              </div>
+
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', marginBottom: '8px', fontFamily: 'var(--font-heading)' }}>
+                {mainPillar === 'videogames'
+                  ? selectedPlatform !== 'all'
+                    ? `No hay videojuegos de ${selectedPlatform.toUpperCase()} actualmente`
+                    : 'No hay videojuegos en inventario actualmente'
+                  : mainPillar === 'accessories'
+                    ? selectedAccessoryType !== 'all'
+                      ? `No hay existencias de ${selectedAccessoryType} actualmente`
+                      : 'No hay accesorios en inventario actualmente'
+                    : activeGame && activeGame !== 'POKEMON'
+                      ? `No hay cartas registradas de ${activeGame} actualmente`
+                      : 'No se encontraron productos con los filtros aplicados'}
+              </h3>
+
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '440px', margin: '0 auto 20px auto', lineHeight: 1.5 }}>
+                Estamos actualizando nuestro catálogo constantemente con piezas certificadas e inventario físico. ¡Vuelve pronto o explora otras secciones!
               </p>
+
+              <button
+                onClick={resetAllFilters}
+                className="btn btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', padding: '10px 20px', borderRadius: '8px' }}
+              >
+                <RotateCcw size={16} />
+                Ver Catálogo General
+              </button>
             </div>
           ) : (
             /* Grilla de productos */
