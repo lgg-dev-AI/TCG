@@ -376,7 +376,7 @@ export default function Home({
             { id: 'lorcana', name: 'Disney Lorcana', type: 'LORCANA', icon: Wand2, color: '#a855f7', desc: 'The First Chapter, Inklands, Illumineer Troves' },
             { id: 'videogames', name: 'Videojuegos & Consolas', category: 'videogame', icon: Gamepad2, color: '#10b981', desc: 'Nintendo Switch, PS5, Xbox Series & Retro' },
             { id: 'accessories', name: 'Accesorios & Protección', category: 'accessory', icon: ShieldCheck, color: '#6366f1', desc: 'Sleeves Dragon Shield, Toploaders, Carpetas' },
-            { id: 'deals', name: 'Liquidaciones & Ofertas', category: 'deals', icon: Tag, color: '#ec4899', desc: 'Garantía de precio por debajo de TCGplayer', badge: 'OFERTAS' }
+            { id: 'deals', name: 'Liquidaciones & Ofertas', category: 'deals', icon: Tag, color: '#ec4899', desc: 'Garantía de precio por debajo de mercado', badge: 'OFERTAS' }
           ].map(hub => {
             const Icon = hub.icon;
             const isCurrent = (hub.type && hub.type === activeGame) || (hub.id === 'pokemon' && activeGame === 'POKEMON');

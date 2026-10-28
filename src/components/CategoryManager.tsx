@@ -209,7 +209,7 @@ export default function CategoryManager({ inventory, onCategoriesChanged, initia
       }}>
         <div>
           <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', margin: 0, fontFamily: 'var(--font-heading)' }}>
-            📁 Gestor de Categorías & Barra de Contenido (TCGplayer Bar)
+            📁 Gestor de Categorías & Barra de Contenido
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
             Configura el árbol jerárquico de tu tienda y la barra horizontal superior para que tus clientes naveguen entre juegos (Pokémon, Magic, Yu-Gi-Oh, One Piece), videojuegos y coleccionables.
@@ -278,7 +278,7 @@ export default function CategoryManager({ inventory, onCategoriesChanged, initia
             cursor: 'pointer'
           }}
         >
-          <Layers size={15} /> 🎮 Barra de Contenido / Juegos (TCGplayer Bar)
+          <Layers size={15} /> 🎮 Barra de Contenido / Juegos
         </button>
       </div>
 
@@ -445,7 +445,7 @@ export default function CategoryManager({ inventory, onCategoriesChanged, initia
           }}>
             <div>
               <strong style={{ fontSize: '13px', color: '#fff', display: 'block' }}>
-                Mostrar en Barra de Contenido (TCGplayer Bar)
+                Mostrar en Barra de Contenido Superior
               </strong>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                 Si está activo, aparecerá en la barra horizontal superior para que los clientes puedan filtrar por este juego/sección directamente.

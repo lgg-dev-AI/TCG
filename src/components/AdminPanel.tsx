@@ -660,16 +660,16 @@ export default function AdminPanel({
     // Clear results
     setApiSearchResults([]);
 
-    // Consultar precios de mercado en vivo de TCGplayer / Cardmarket
+    // Consultar precios de mercado en vivo
     if (card.game_type === 'POKEMON' && card.id) {
-      setMarketPriceNotice('⏳ Consultando cotización en vivo de TCGplayer...');
+      setMarketPriceNotice('⏳ Consultando cotización de mercado en vivo...');
       const detail = await fetchCardPricingDetail(card.id);
       if (detail && detail.marketPrice > 0) {
         setNewProdMarketPrice(detail.marketPrice);
         setNewProdMarketPriceLow(detail.marketPriceLow);
         setNewProdMarketPriceHigh(detail.marketPriceHigh);
         setNewProdPrice(detail.marketPrice);
-        setMarketPriceNotice(`✅ Cotización TCGplayer: $${detail.marketUsd.toFixed(2)} USD (~$${detail.marketPrice.toLocaleString('es-MX')} MXN). Precios de mercado auto-llenados.`);
+        setMarketPriceNotice(`✅ Cotización de mercado: $${detail.marketUsd.toFixed(2)} USD (~$${detail.marketPrice.toLocaleString('es-MX')} MXN). Precios de referencia auto-llenados.`);
       } else {
         setMarketPriceNotice(null);
       }
