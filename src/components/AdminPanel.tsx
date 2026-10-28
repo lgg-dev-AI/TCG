@@ -10,6 +10,7 @@ import type { UserData } from './AccountPanel';
 import { multiTcgSearch, fetchPokemonExpansionsForCard, fetchCardPricingDetail, type CardSearchResult } from '../services/multiTcgApi';
 import { TCG_EXPANSIONS } from '../data/tcgExpansions';
 import { ALL_POKEMON_NAMES } from '../data/pokemonNames';
+import { getTcgCharacterSuggestions } from '../data/tcgCharacterNames';
 import { apiGetAdminLogs, apiGetCategories, type CategoryItem } from '../api';
 import { compressImage } from '../utils/imageCompressor';
 import CategoryManager from './CategoryManager';
@@ -181,16 +182,24 @@ export default function AdminPanel({
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
   const [dynamicExpansions, setDynamicExpansions] = useState<string[]>([]);
   const [loadingExpansions, setLoadingExpansions] = useState(false);
-  const [showPokemonSuggestions, setShowPokemonSuggestions] = useState(false);
+  const [showTcgSuggestions, setShowTcgSuggestions] = useState(false);
+  const tcgSuggestionsRef = React.useRef<HTMLDivElement>(null);
 
-  // Autocomplete instantáneo A-Z de nombres de Pokémon
-  const filteredPokemonNames = React.useMemo(() => {
-    if (newProdGameType !== 'POKEMON' || !apiSearchQuery.trim()) return [];
-    const q = apiSearchQuery.trim().toLowerCase();
-    const startsWith = ALL_POKEMON_NAMES.filter(name => name.toLowerCase().startsWith(q));
-    const includes = ALL_POKEMON_NAMES.filter(name => !name.toLowerCase().startsWith(q) && name.toLowerCase().includes(q));
-    return [...startsWith, ...includes].slice(0, 35);
-  }, [apiSearchQuery, newProdGameType]);
+  // Click outside para cerrar sugerencias del buscador TCG
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tcgSuggestionsRef.current && !tcgSuggestionsRef.current.contains(event.target as Node)) {
+        setShowTcgSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Autocomplete instantáneo A-Z de personajes y cartas según el juego TCG seleccionado
+  const tcgSuggestions = React.useMemo(() => {
+    return getTcgCharacterSuggestions(newProdGameType, apiSearchQuery, ALL_POKEMON_NAMES);
+  }, [newProdGameType, apiSearchQuery]);
 
   // Filtrar dinámicamente las expansiones cuando se escribe el nombre de un Pokémon
   useEffect(() => {
@@ -644,17 +653,18 @@ export default function AdminPanel({
   };
 
   // TCG API card search logic
-  const handleCardApiSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!apiSearchQuery.trim() && !newProdPulledFrom) {
+  const handleCardApiSearch = async (e?: React.FormEvent, overrideQuery?: string) => {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    const queryToUse = overrideQuery !== undefined ? overrideQuery : apiSearchQuery;
+    if (!queryToUse.trim() && !newProdPulledFrom) {
       setApiSearchError('Escribe el nombre de la carta o selecciona una expansión para buscar.');
       return;
     }
     setSearchingCards(true);
     setApiSearchError(null);
-    setShowPokemonSuggestions(false);
+    setShowTcgSuggestions(false);
     try {
-      const result = await multiTcgSearch(apiSearchQuery, newProdGameType, newProdPulledFrom);
+      const result = await multiTcgSearch(queryToUse, newProdGameType, newProdPulledFrom);
       setApiSearchResults(result);
       if (result.length === 0) {
         setApiSearchError('No se encontraron cartas con esos criterios. Intenta con otro término o sobre.');
@@ -684,7 +694,7 @@ export default function AdminPanel({
     
     // Clear results & dropdown
     setApiSearchResults([]);
-    setShowPokemonSuggestions(false);
+    setShowTcgSuggestions(false);
 
     // Consultar precios de mercado en vivo
     if (card.game_type === 'POKEMON' && card.id) {
@@ -1434,7 +1444,7 @@ export default function AdminPanel({
                           setNewProdGameType(gt);
                           setApiSearchResults([]);
                           setApiSearchError(null);
-                          setShowPokemonSuggestions(false);
+                          setShowTcgSuggestions(false);
                         }}
                         style={{
                           backgroundColor: '#121622',
@@ -1482,64 +1492,77 @@ export default function AdminPanel({
                       </select>
                     )}
 
-                    {/* Input de Nombre con Combobox / Autocomplete de Pokémon */}
-                    <div style={{ position: 'relative', width: '100%' }}>
+                    {/* Input de Nombre con Combobox / Autocomplete Multi-TCG */}
+                    <div ref={tcgSuggestionsRef} style={{ position: 'relative', width: '100%' }}>
                       <input
                         type="text"
                         placeholder={
                           newProdGameType === 'POKEMON'
                             ? "Escribe el Pokémon (ej: Absol, Rayquaza, Charizard... A-Z)..."
                             : newProdGameType === 'YUGIOH'
-                            ? "Nombre de carta Yu-Gi-Oh! (ej: Blue-Eyes, Dark Magician)..."
+                            ? "Monstruo o carta Yu-Gi-Oh! (ej: Blue-Eyes, Dark Magician, Exodia... A-Z)..."
                             : newProdGameType === 'MAGIC'
-                            ? "Nombre de carta Magic (ej: Black Lotus, Sol Ring, Lightning Bolt)..."
-                            : "Nombre de carta One Piece (ej: Luffy, Zoro, Shanks, Nami)..."
+                            ? "Carta de Magic (ej: Black Lotus, The One Ring, Sol Ring... A-Z)..."
+                            : "Personaje de One Piece (ej: Luffy, Zoro, Shanks, Nami, Yamato... A-Z)..."
                         }
                         value={apiSearchQuery}
                         onChange={(e) => {
                           setApiSearchQuery(e.target.value);
-                          setShowPokemonSuggestions(newProdGameType === 'POKEMON' && e.target.value.trim().length > 0);
+                          setShowTcgSuggestions(true);
                         }}
                         onFocus={() => {
-                          if (newProdGameType === 'POKEMON' && apiSearchQuery.trim().length > 0) {
-                            setShowPokemonSuggestions(true);
-                          }
+                          setShowTcgSuggestions(true);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            setShowPokemonSuggestions(false);
+                            setShowTcgSuggestions(false);
                             handleCardApiSearch();
+                          } else if (e.key === 'Escape') {
+                            setShowTcgSuggestions(false);
                           }
                         }}
                         style={{ ...getFormInputStyle(), width: '100%' }}
                       />
 
-                      {/* Dropdown flotante Combobox Pokémon A-Z */}
-                      {showPokemonSuggestions && filteredPokemonNames.length > 0 && (
+                      {/* Dropdown flotante Combobox Multi-TCG A-Z */}
+                      {showTcgSuggestions && tcgSuggestions.items.length > 0 && (
                         <div style={{
                           position: 'absolute',
                           top: '100%',
                           left: 0,
                           right: 0,
                           backgroundColor: '#161b26',
-                          border: '1px solid #ffcb05',
+                          border: `1px solid ${tcgSuggestions.color}`,
                           borderRadius: '8px',
                           marginTop: '4px',
-                          maxHeight: '220px',
+                          maxHeight: '230px',
                           overflowY: 'auto',
                           zIndex: 50,
                           boxShadow: '0 8px 24px rgba(0,0,0,0.85)'
                         }}>
-                          <div style={{ padding: '6px 10px', fontSize: '10px', fontWeight: 800, color: '#ffcb05', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,203,5,0.06)' }}>
-                            Sugerencias de Pokémon ({filteredPokemonNames.length} encontrados)
+                          <div style={{
+                            padding: '6px 10px',
+                            fontSize: '10px',
+                            fontWeight: 800,
+                            color: tcgSuggestions.color,
+                            textTransform: 'uppercase',
+                            borderBottom: '1px solid rgba(255,255,255,0.08)',
+                            background: 'rgba(255,255,255,0.03)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <span>{tcgSuggestions.title} ({tcgSuggestions.items.length} disponibles)</span>
+                            <span style={{ fontSize: '9px', opacity: 0.7, fontWeight: 500 }}>Filtro A-Z</span>
                           </div>
-                          {filteredPokemonNames.map((pkName) => (
+                          {tcgSuggestions.items.map((charName) => (
                             <div
-                              key={pkName}
+                              key={charName}
                               onClick={() => {
-                                setApiSearchQuery(pkName);
-                                setShowPokemonSuggestions(false);
+                                setApiSearchQuery(charName);
+                                setShowTcgSuggestions(false);
+                                handleCardApiSearch(undefined, charName);
                               }}
                               style={{
                                 padding: '8px 12px',
@@ -1547,18 +1570,24 @@ export default function AdminPanel({
                                 color: '#fff',
                                 cursor: 'pointer',
                                 borderBottom: '1px solid rgba(255,255,255,0.03)',
-                                transition: 'all 0.15s ease'
+                                transition: 'all 0.15s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '7px'
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = 'rgba(255, 203, 5, 0.15)';
-                                e.currentTarget.style.color = '#ffcb05';
+                                e.currentTarget.style.backgroundColor = `${tcgSuggestions.color}22`;
+                                e.currentTarget.style.color = tcgSuggestions.color;
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';
                                 e.currentTarget.style.color = '#fff';
                               }}
                             >
-                              ⭐ <strong>{pkName}</strong>
+                              <span>
+                                {newProdGameType === 'POKEMON' ? '⚡' : newProdGameType === 'ONEPIECE' ? '🏴‍☠️' : newProdGameType === 'YUGIOH' ? '⚔️' : '🧙'}
+                              </span>
+                              <strong>{charName}</strong>
                             </div>
                           ))}
                         </div>
