@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { 
   X, ShoppingCart, ZoomIn, ShieldCheck, HelpCircle, 
-  TrendingUp, FileText, Award, Plus, Minus, PackageCheck, Truck
+  Plus, Minus
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import MarketPriceHistory from './MarketPriceHistory';
@@ -19,7 +19,6 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number; show: boolean }>({ x: 50, y: 50, show: false });
   const [isConditionGuideOpen, setIsConditionGuideOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'prices_trends' | 'attacks_tech' | 'condition_guarantee'>('prices_trends');
   
   const cardRef = useRef<HTMLDivElement>(null);
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
@@ -604,60 +603,10 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               </div>
             </div>
 
-            {/* FICHA DE BÓVEDA & GARANTÍAS DE COLECCIONISTA (Equilibrio visual y confianza) */}
-            <div style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: '12px',
-              padding: '12px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              <div style={{
-                fontSize: '10.5px',
-                fontWeight: 800,
-                color: '#ffcb05',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                <ShieldCheck size={14} color="#ffcb05" />
-                Garantías de Bóveda PokéVault
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '6px 10px', borderRadius: '6px' }}>
-                  <PackageCheck size={13} color="#34d399" style={{ flexShrink: 0 }} />
-                  <div>
-                    <strong style={{ color: '#fff', fontSize: '11px' }}>Empaque Blindado: </strong>
-                    <span>Sleeve suave + toploader rígido Ultra-Pro</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '6px 10px', borderRadius: '6px' }}>
-                  <Award size={13} color="#60a5fa" style={{ flexShrink: 0 }} />
-                  <div>
-                    <strong style={{ color: '#fff', fontSize: '11px' }}>100% Autenticidad: </strong>
-                    <span>Inspección óptica UV y gramaje verificado</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '6px 10px', borderRadius: '6px' }}>
-                  <Truck size={13} color="#fbbf24" style={{ flexShrink: 0 }} />
-                  <div>
-                    <strong style={{ color: '#fff', fontSize: '11px' }}>Entrega Personal / Envío: </strong>
-                    <span>En stands de eventos o paquetería express asegurada</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* ========================================================= */}
-          {/* COLUMNA 3 (DERECHA): Precios y Tendencias, Ficha Técnica, Garantía */}
+          {/* COLUMNA 3 (DERECHA): Precios y Tendencias */}
           {/* ========================================================= */}
           <div style={{
             display: 'flex',
@@ -665,157 +614,17 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
             height: '100%',
             minWidth: 0
           }}>
-            {/* PESTAÑAS (Exact Wording: Precios y Tendencias) */}
-            <div style={{
-              display: 'flex',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              gap: '4px',
-              marginBottom: '14px',
-              overflowX: 'auto',
-              scrollbarWidth: 'none'
-            }}>
-              <button
-                onClick={() => setActiveTab('prices_trends')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'prices_trends' ? '2px solid #ffcb05' : '2px solid transparent',
-                  color: activeTab === 'prices_trends' ? '#ffcb05' : 'var(--text-secondary)',
-                  fontWeight: activeTab === 'prices_trends' ? 800 : 600,
-                  fontSize: '12.5px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <TrendingUp size={14} />
-                <span>Precios y Tendencias</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('attacks_tech')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'attacks_tech' ? '2px solid #ffcb05' : '2px solid transparent',
-                  color: activeTab === 'attacks_tech' ? '#ffcb05' : 'var(--text-secondary)',
-                  fontWeight: activeTab === 'attacks_tech' ? 800 : 600,
-                  fontSize: '12.5px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <FileText size={14} />
-                <span>Ficha Técnica y Ataques</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('condition_guarantee')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 12px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeTab === 'condition_guarantee' ? '2px solid #ffcb05' : '2px solid transparent',
-                  color: activeTab === 'condition_guarantee' ? '#ffcb05' : 'var(--text-secondary)',
-                  fontWeight: activeTab === 'condition_guarantee' ? 800 : 600,
-                  fontSize: '12.5px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <ShieldCheck size={14} />
-                <span>Estado y Garantía</span>
-              </button>
-            </div>
-
-            {/* CONTENEDOR DE PESTAÑAS CON SCROLL INDEPENDIENTE */}
+            {/* CONTENEDOR CON SCROLL INDEPENDIENTE */}
             <div style={{
               flex: 1,
               overflowY: 'auto',
               maxHeight: 'calc(92vh - 120px)',
               paddingRight: '4px'
             }}>
-              {/* TAB 1: PRECIOS Y TENDENCIAS */}
-              {activeTab === 'prices_trends' && (
-                <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
-                  <MarketPriceHistory 
-                    product={product} 
-                    onOpenConditionGuide={() => setIsConditionGuideOpen(true)} 
-                  />
-                </div>
-              )}
-
-              {/* TAB 2: FICHA TÉCNICA Y ATAQUES */}
-              {activeTab === 'attacks_tech' && (
-                <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
-                  {isSingle && cardData?.attacks && cardData.attacks.length > 0 ? (
-                    <div>
-                      <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: '#fff', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', fontWeight: 800 }}>
-                        Ataques y Habilidades Oficiales
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {cardData.attacks.map((attack, index) => (
-                          <div key={index} style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                              <span style={{ fontWeight: 800, fontSize: '13px', color: '#ffffff' }}>{attack.name}</span>
-                              <span style={{ fontWeight: 800, fontSize: '13px', color: '#ffcb05' }}>{attack.damage || ''}</span>
-                            </div>
-                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>{attack.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
-                      <FileText size={24} style={{ margin: '0 auto 8px auto', opacity: 0.5 }} />
-                      <p style={{ margin: 0, fontSize: '12.5px' }}>
-                        {product.category === 'videogame' 
-                          ? `Videojuego probado para plataforma ${product.platform || 'N/A'}. Funcionando al 100%.` 
-                          : 'Este producto no cuenta con ataques o habilidades de juego de cartas.'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* TAB 3: ESTADO Y GARANTÍA */}
-              {activeTab === 'condition_guarantee' && (
-                <div style={{
-                  animation: 'fadeIn 0.2s ease-out',
-                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: '10px',
-                  padding: '16px',
-                  border: '1px solid rgba(255, 255, 255, 0.06)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                    <Award size={18} color="#ffcb05" />
-                    <strong style={{ fontSize: '13.5px', color: '#fff' }}>Políticas de Calidad & Protección PokéVault</strong>
-                  </div>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px 0' }}>
-                    Cada artículo pasa por una estricta inspección óptica de bordes, esquinas, superficie y centrado para garantizar autenticidad total sin sorpresas.
-                  </p>
-                  <button
-                    onClick={() => setIsConditionGuideOpen(true)}
-                    className="btn btn-secondary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', padding: '7px 12px' }}
-                  >
-                    <HelpCircle size={13} /> Abrir Guía Visual de Estados (NM / LP / MP / HP)
-                  </button>
-                </div>
-              )}
+              <MarketPriceHistory 
+                product={product} 
+                onOpenConditionGuide={() => setIsConditionGuideOpen(true)} 
+              />
             </div>
           </div>
 
