@@ -312,11 +312,12 @@ export interface CustomerCheckoutData {
   };
   total?: number;
   discountApplied?: number;
+  bankDetails?: any;
 }
 
 export const apiCheckout = async (
   cartItems: {productId: string, quantity: number, name?: string, price?: number}[],
-  paymentMethod: string = 'Transferencia',
+  paymentMethod: string = 'Stripe',
   paymentReceipt?: string,
   customerData?: CustomerCheckoutData
 ) => {
@@ -331,7 +332,9 @@ export const apiCheckout = async (
         customerName: customerData?.name,
         customerEmail: customerData?.email,
         customerPhone: customerData?.phone,
-        shippingAddress: customerData?.address
+        shippingAddress: customerData?.address,
+        bankDetails: customerData?.bankDetails,
+        total: customerData?.total
       })
     });
     if (res.ok) {
@@ -347,14 +350,15 @@ export const apiCheckout = async (
   const cleanEmail = customerData?.email?.trim() || 'cliente@pokevault.mx';
   const cleanName = customerData?.name?.trim() || 'Cliente PokéVault';
   const totalAmount = customerData?.total || cartItems.reduce((acc, it) => acc + (it.quantity * 100), 0);
-  const status = paymentMethod === 'PayPal' ? 'PAGADO' : 'Pendiente';
+  const isPaidOnline = paymentMethod === 'Stripe' || paymentMethod === 'PayPal';
+  const status = isPaidOnline ? 'PAGADO' : 'Pendiente';
 
   // Buscar datos bancarios en localStorage si existen
-  let bankName = 'BBVA';
-  let clabe = '012180012345678901';
-  let beneficiary = 'PokéVault México';
+  let bankName = customerData?.bankDetails?.bankName || 'BBVA';
+  let clabe = customerData?.bankDetails?.clabe || '012180012345678901';
+  let beneficiary = customerData?.bankDetails?.beneficiary || 'PokéVault México';
   if (typeof localStorage !== 'undefined') {
-    const savedBank = localStorage.getItem('pokevault_bank_settings');
+    const savedBank = localStorage.getItem('pokevault_bank_settings') || localStorage.getItem('kt_bankSettings');
     if (savedBank) {
       try {
         const parsed = JSON.parse(savedBank);
@@ -370,23 +374,29 @@ export const apiCheckout = async (
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0e1118; color: #ffffff; padding: 40px 20px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #1a2233;">
       <div style="background-color: #ff3e3e; padding: 24px; border-radius: 12px 12px 0 0; text-align: center; border-bottom: 5px solid #ffcb05;">
         <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 0; text-transform: uppercase;">PokéVault</h1>
-        <span style="font-size: 11px; color: #ffcb05; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">Confirmación de Pedido</span>
+        <span style="font-size: 11px; color: #ffcb05; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">${isPaidOnline ? 'Pago Confirmado' : 'Apartado de Pedido (48 hrs)'}</span>
       </div>
       <div style="padding: 30px 24px; background-color: #161b26; border-radius: 0 0 12px 12px;">
-        <h2 style="font-size: 18px; color: #ffffff; margin-top: 0; font-weight: 700; text-align: center;">¡Pedido Registrado con Éxito!</h2>
+        <h2 style="font-size: 18px; color: #ffffff; margin-top: 0; font-weight: 700; text-align: center;">${isPaidOnline ? '¡Compra Pagada con Éxito!' : '¡Pedido Apartado para Recoger en Tienda!'}</h2>
         <p style="font-size: 13px; color: #a0aec0; line-height: 1.6; text-align: center; margin-bottom: 24px;">
           Hola <strong>${cleanName}</strong>, gracias por comprar en <strong>PokéVault</strong>. Hemos registrado tu pedido número <strong style="color: #ffcb05;">${orderId}</strong> por un total de <strong>$${totalAmount.toLocaleString('es-MX')} MXN</strong>.
         </p>
-        ${paymentMethod === 'Transferencia' ? `
-        <div style="background: rgba(255, 203, 5, 0.08); border: 1px solid rgba(255, 203, 5, 0.3); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-          <h4 style="margin: 0 0 8px 0; color: #ffcb05; font-size: 13px;">Datos para Transferencia SPEI:</h4>
-          <p style="margin: 4px 0; font-size: 12px; color: #e2e8f0;">Banco: <strong>${bankName}</strong></p>
-          <p style="margin: 4px 0; font-size: 12px; color: #e2e8f0;">CLABE: <strong>${clabe}</strong></p>
-          <p style="margin: 4px 0; font-size: 12px; color: #e2e8f0;">Beneficiario: <strong>${beneficiary}</strong></p>
-          <p style="margin: 4px 0; font-size: 12px; color: #e2e8f0;">Concepto / Referencia: <strong>${orderId}</strong></p>
-        </div>` : ''}
+        ${paymentMethod === 'Stripe' ? `
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.35); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+          <h4 style="margin: 0 0 6px 0; color: #818cf8; font-size: 13px;">💳 Pago Aprobado con Tarjeta (Stripe)</h4>
+          <p style="margin: 0; font-size: 12px; color: #e2e8f0;">Tu pago fue validado de inmediato. Tus cartas están siendo empaquetadas.</p>
+        </div>` : `
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+          <h4 style="margin: 0 0 6px 0; color: #34d399; font-size: 13px;">💵 ¿Pagarás en efectivo o tarjeta física en tienda?</h4>
+          <p style="margin: 0; font-size: 12px; color: #e2e8f0;">¡Haz caso omiso a los datos bancarios! Te esperamos en nuestro local físico con tu número de pedido <strong>${orderId}</strong>.</p>
+        </div>
+        <div style="background: rgba(255, 203, 5, 0.06); border: 1px solid rgba(255, 203, 5, 0.3); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+          <h4 style="margin: 0 0 6px 0; color: #ffcb05; font-size: 13px;">⚡ ¿Deseas adelantar tu pago por SPEI para entrega exprés?</h4>
+          <p style="margin: 4px 0; font-size: 12px; color: #e2e8f0;">Banco: <strong>${bankName}</strong> | CLABE: <strong style="color: #ffcb05;">${clabe}</strong> | Beneficiario: <strong>${beneficiary}</strong></p>
+          <p style="margin: 2px 0 0 0; font-size: 11px; color: #94a3b8;">Referencia: <strong>${orderId}</strong></p>
+        </div>`}
         <p style="font-size: 11px; color: #718096; text-align: center; border-top: 1px solid #1a2233; padding-top: 16px; margin: 0;">
-          Gracias por confiar en PokéVault. Validaremos tu pedido de inmediato.
+          Gracias por confiar en PokéVault.
         </p>
       </div>
     </div>
@@ -523,22 +533,59 @@ export const apiGetAllUsersAdmin = async () => {
 };
 
 // ========================
-// BANK SETTINGS
+// BANK & STRIPE SETTINGS
 // ========================
 export const apiGetBankSettings = async () => {
-  const res = await fetch(`${API_BASE}/orders/settings`);
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/orders/settings`);
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn('API /orders/settings no disponible, usando configuración local:', e);
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    const local = localStorage.getItem('kt_bankSettings') || localStorage.getItem('pokevault_bank_settings');
+    if (local) {
+      try {
+        return JSON.parse(local);
+      } catch {}
+    }
+  }
+
+  return {
+    bankName: 'BBVA',
+    clabe: '012180012345678901',
+    accountNumber: '1234567890',
+    beneficiary: 'PokéVault México',
+    whatsapp: '525512345678',
+    stripeActive: 'true',
+    stripePublishableKey: '',
+    stripeSecretKey: '',
+    paypalClientId: '',
+    paypalActive: 'false'
+  };
 };
 
 export const apiUpdateBankSettings = async (settings: any) => {
-  const res = await fetch(`${API_BASE}/orders/settings`, {
-    method: 'PUT',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(settings)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  if (typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem('kt_bankSettings', JSON.stringify(settings));
+      localStorage.setItem('pokevault_bank_settings', JSON.stringify(settings));
+    } catch {}
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/orders/settings`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(settings)
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn('API /orders/settings PUT no disponible, guardado en localStorage:', e);
+  }
+
+  return settings;
 };
 
 // ========================

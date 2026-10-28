@@ -253,7 +253,12 @@ export default function App() {
     clabe: '012180012345678901',
     accountNumber: '1234567890',
     beneficiary: 'PokéVault México',
-    whatsapp: ''
+    whatsapp: '',
+    stripeActive: 'true',
+    stripePublishableKey: '',
+    stripeSecretKey: '',
+    paypalClientId: '',
+    paypalActive: 'false'
   }));
 
   // Modal Login

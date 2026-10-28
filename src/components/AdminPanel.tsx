@@ -3,7 +3,8 @@ import {
   BarChart3, Package, ShoppingBag, Users, Plus, Tag, Settings2,
   Edit, Check, X, ShieldAlert, ChevronDown, ChevronUp, Clock, Truck, CheckCircle2,
   AlertTriangle, Upload, Banknote, Save, Trash2, Search, Loader2,
-  QrCode, Printer, Gamepad2, Smartphone, Sparkles, Copy, FolderTree, TrendingUp
+  QrCode, Printer, Gamepad2, Smartphone, Sparkles, Copy, FolderTree, TrendingUp,
+  CreditCard, Store
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
@@ -39,7 +40,7 @@ export interface Order {
     state: string;
     zipCode: string;
   };
-  paymentMethod?: 'Transferencia' | 'Efectivo' | 'PayPal';
+  paymentMethod?: 'Stripe' | 'Transferencia' | 'Efectivo' | 'PayPal';
   paymentReceipt?: string;       // Base64 image
   paymentReceiptName?: string;
   cashAmountReceived?: number;
@@ -75,6 +76,9 @@ export interface BankSettings {
   accountNumber: string;
   beneficiary: string;
   whatsapp: string;
+  stripeActive?: string;
+  stripePublishableKey?: string;
+  stripeSecretKey?: string;
   paypalClientId?: string;
   paypalActive?: string;
 }
@@ -323,7 +327,7 @@ export default function AdminPanel({
   const [expandedBuyback, setExpandedBuyback] = useState<string | null>(null);
 
   // Per-order payment editing state
-  const [orderPaymentMethod, setOrderPaymentMethod] = useState<Record<string, 'Transferencia' | 'Efectivo'>>({});
+  const [orderPaymentMethod, setOrderPaymentMethod] = useState<Record<string, 'Stripe' | 'Transferencia' | 'Efectivo'>>({});
   const [orderCashAmount, setOrderCashAmount] = useState<Record<string, number>>({});
   const [orderReceiptBase64, setOrderReceiptBase64] = useState<Record<string, string>>({});
   const [orderReceiptName, setOrderReceiptName] = useState<Record<string, string>>({});
@@ -341,6 +345,9 @@ export default function AdminPanel({
   const [editWhatsapp, setEditWhatsapp] = useState(bankSettings.whatsapp || '');
   const [editPaypalClientId, setEditPaypalClientId] = useState(bankSettings.paypalClientId || '');
   const [editPaypalActive, setEditPaypalActive] = useState(bankSettings.paypalActive === 'true');
+  const [editStripeActive, setEditStripeActive] = useState(bankSettings.stripeActive !== 'false');
+  const [editStripePublishableKey, setEditStripePublishableKey] = useState(bankSettings.stripePublishableKey || '');
+  const [editStripeSecretKey, setEditStripeSecretKey] = useState(bankSettings.stripeSecretKey || '');
   const [bankSaveSuccess, setBankSaveSuccess] = useState(false);
 
   // Sync bankSettings props to form states when it finishes loading from API
@@ -352,6 +359,9 @@ export default function AdminPanel({
     setEditWhatsapp(bankSettings.whatsapp || '');
     setEditPaypalClientId(bankSettings.paypalClientId || '');
     setEditPaypalActive(bankSettings.paypalActive === 'true');
+    setEditStripeActive(bankSettings.stripeActive !== 'false');
+    setEditStripePublishableKey(bankSettings.stripePublishableKey || '');
+    setEditStripeSecretKey(bankSettings.stripeSecretKey || '');
   }, [bankSettings]);
 
   // Edit product states
@@ -924,6 +934,9 @@ export default function AdminPanel({
       accountNumber: editAccount.trim(),
       beneficiary: editBeneficiary.trim(),
       whatsapp: editWhatsapp.trim(),
+      stripeActive: editStripeActive ? 'true' : 'false',
+      stripePublishableKey: editStripePublishableKey.trim(),
+      stripeSecretKey: editStripeSecretKey.trim(),
       paypalClientId: editPaypalClientId.trim(),
       paypalActive: editPaypalActive ? 'true' : 'false'
     });
@@ -2811,20 +2824,20 @@ export default function AdminPanel({
                             <h5 style={{ fontSize: '12px', fontWeight: 700, color: 'white', margin: '0 0 10px 0', textTransform: 'uppercase' }}>Método de Pago</h5>
                             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                               <button
-                                onClick={() => setOrderPaymentMethod(prev => ({ ...prev, [order.id]: 'Transferencia' }))}
+                                onClick={() => setOrderPaymentMethod(prev => ({ ...prev, [order.id]: 'Stripe' }))}
                                 style={{
                                   flex: 1,
                                   padding: '8px',
                                   fontSize: '11px',
                                   borderRadius: '6px',
                                   border: '1px solid var(--border-color)',
-                                  backgroundColor: (orderPaymentMethod[order.id] || order.paymentMethod) === 'Transferencia' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(255,255,255,0.02)',
-                                  color: (orderPaymentMethod[order.id] || order.paymentMethod) === 'Transferencia' ? '#60a5fa' : 'var(--text-secondary)',
+                                  backgroundColor: (orderPaymentMethod[order.id] || order.paymentMethod) === 'Stripe' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.02)',
+                                  color: (orderPaymentMethod[order.id] || order.paymentMethod) === 'Stripe' ? '#818cf8' : 'var(--text-secondary)',
                                   cursor: 'pointer',
                                   fontWeight: 600
                                 }}
                               >
-                                <Upload size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />SPEI
+                                <CreditCard size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Stripe
                               </button>
                               <button
                                 onClick={() => setOrderPaymentMethod(prev => ({ ...prev, [order.id]: 'Efectivo' }))}
@@ -2840,9 +2853,37 @@ export default function AdminPanel({
                                   fontWeight: 600
                                 }}
                               >
-                                <Banknote size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Efectivo
+                                <Store size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />En Tienda
+                              </button>
+                              <button
+                                onClick={() => setOrderPaymentMethod(prev => ({ ...prev, [order.id]: 'Transferencia' }))}
+                                style={{
+                                  flex: 1,
+                                  padding: '8px',
+                                  fontSize: '11px',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--border-color)',
+                                  backgroundColor: (orderPaymentMethod[order.id] || order.paymentMethod) === 'Transferencia' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(255,255,255,0.02)',
+                                  color: (orderPaymentMethod[order.id] || order.paymentMethod) === 'Transferencia' ? '#60a5fa' : 'var(--text-secondary)',
+                                  cursor: 'pointer',
+                                  fontWeight: 600
+                                }}
+                              >
+                                <Upload size={11} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />SPEI
                               </button>
                             </div>
+
+                            {(orderPaymentMethod[order.id] || order.paymentMethod) === 'Stripe' && (
+                              <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', fontSize: '11px', color: '#c7d2fe', marginBottom: '8px' }}>
+                                💳 <strong>Pago Procesado vía Stripe:</strong> Cobro verificado y validado con tarjeta en línea.
+                              </div>
+                            )}
+
+                            {(orderPaymentMethod[order.id] || order.paymentMethod) === 'Efectivo' && (
+                              <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(52, 211, 153, 0.08)', border: '1px solid rgba(52, 211, 153, 0.25)', fontSize: '11px', color: '#a7f3d0', marginBottom: '8px' }}>
+                                🏪 <strong>Apartado para Recoger en Tienda:</strong> Cliente reservó cartas para liquidar en persona o por SPEI previo.
+                              </div>
+                            )}
 
                             {/* Comprobante de transferencia */}
                             {(orderPaymentMethod[order.id] || order.paymentMethod) === 'Transferencia' && (
@@ -3467,6 +3508,79 @@ export default function AdminPanel({
                   CLABE: <span style={{ fontFamily: 'monospace', color: '#60a5fa' }}>{editClabe || '—'}</span><br />
                   Beneficiario: <span style={{ color: 'white' }}>{editBeneficiary || '—'}</span><br />
                   {editWhatsapp && <>📱 WhatsApp: <span style={{ color: '#34d399' }}>+{editWhatsapp}</span></>}
+                </div>
+              </div>
+
+              {/* Stripe Integration Settings */}
+              <div style={{
+                marginTop: '10px',
+                padding: '20px',
+                backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                borderRadius: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>💳</span>
+                    <strong style={{ color: 'white', fontSize: '14px' }}>Pasarela de Pagos Stripe</strong>
+                  </div>
+                  {editStripePublishableKey && (
+                    <span style={{
+                      fontSize: '10px',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontWeight: 700,
+                      backgroundColor: editStripePublishableKey.startsWith('pk_live') ? 'rgba(52, 211, 153, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                      color: editStripePublishableKey.startsWith('pk_live') ? '#34d399' : '#f59e0b',
+                      border: editStripePublishableKey.startsWith('pk_live') ? '1px solid #34d399' : '1px solid #f59e0b'
+                    }}>
+                      {editStripePublishableKey.startsWith('pk_live') ? 'PRODUCCIÓN (LIVE)' : 'MODO PRUEBAS (TEST)'}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    id="stripeActive"
+                    checked={editStripeActive}
+                    onChange={(e) => setEditStripeActive(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="stripeActive" style={{ fontSize: '13px', color: 'white', cursor: 'pointer', fontWeight: 600 }}>
+                    Habilitar Pago con Tarjeta (Stripe) en Checkout (Recomendado)
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Stripe Publishable Key</label>
+                  <input
+                    type="text"
+                    placeholder="pk_test_... o pk_live_..."
+                    value={editStripePublishableKey}
+                    onChange={(e) => setEditStripePublishableKey(e.target.value)}
+                    style={{ ...getFormInputStyle(), fontFamily: 'monospace' }}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Clave pública para procesar tarjetas con cifrado SSL bancario en tiempo real.
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Stripe Secret Key (Servidor)</label>
+                  <input
+                    type="password"
+                    placeholder="sk_test_... o sk_live_..."
+                    value={editStripeSecretKey}
+                    onChange={(e) => setEditStripeSecretKey(e.target.value)}
+                    style={{ ...getFormInputStyle(), fontFamily: 'monospace' }}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Clave secreta de Stripe para verificar cobros y transacciones.
+                  </span>
                 </div>
               </div>
 

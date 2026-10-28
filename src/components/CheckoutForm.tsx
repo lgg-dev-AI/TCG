@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, ShieldCheck, CheckCircle2, ChevronLeft, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, ShieldCheck, CheckCircle2, ChevronLeft, Loader2, AlertCircle, Store, Lock } from 'lucide-react';
 import type { CartItem } from './CartDrawer';
 import type { Order } from './AdminPanel';
 import type { UserData } from './AccountPanel';
@@ -20,6 +20,9 @@ interface CheckoutFormProps {
     accountNumber: string;
     beneficiary: string;
     whatsapp?: string;
+    stripeActive?: string;
+    stripePublishableKey?: string;
+    stripeSecretKey?: string;
     paypalClientId?: string;
     paypalActive?: string;
   };
@@ -52,9 +55,11 @@ export default function CheckoutForm({
   const [zip, setZip] = useState(userData?.address?.zipCode || '');
   
   // Métodos de Pago
-  const [paymentMethod, setPaymentMethod] = useState<'Transferencia' | 'Efectivo' | 'PayPal'>('Transferencia');
-  const [receiptBase64, setReceiptBase64] = useState<string>('');
-  const [receiptName, setReceiptName] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'Stripe' | 'Efectivo' | 'PayPal'>('Stripe');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
 
   const [orderNumber, setOrderNumber] = useState('');
 
@@ -224,17 +229,24 @@ export default function CheckoutForm({
     }
   }, [paymentMethod, paypalLoaded, total]);
 
-  // Lector de Archivos de Comprobante
-  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Manejadores de formateo para tarjeta Stripe
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+    const parts = raw.match(/[\s\S]{1,4}/g) || [];
+    setCardNumber(parts.join(' '));
+  };
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setReceiptBase64(reader.result as string);
-      setReceiptName(file.name);
-    };
-    reader.readAsDataURL(file);
+  const handleCardExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (raw.length >= 3) {
+      raw = raw.slice(0, 2) + '/' + raw.slice(2);
+    }
+    setCardExpiry(raw);
+  };
+
+  const handleCardCvcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setCardCvc(raw);
   };
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
@@ -244,6 +256,27 @@ export default function CheckoutForm({
     if (!name.trim() || !email.trim() || !phone.trim() || !address.trim() || !city.trim() || !state.trim() || !zip.trim()) {
       setErrorMessage('Por favor, rellena todos los campos de contacto y envío.');
       return;
+    }
+
+    // Validación de tarjeta Stripe
+    if (paymentMethod === 'Stripe') {
+      const cleanNum = cardNumber.replace(/\s/g, '');
+      if (cleanNum.length < 15) {
+        setErrorMessage('Por favor introduce un número de tarjeta válido (16 dígitos).');
+        return;
+      }
+      if (!cardName.trim()) {
+        setErrorMessage('Por favor introduce el nombre del titular como aparece en la tarjeta.');
+        return;
+      }
+      if (cardExpiry.length !== 5) {
+        setErrorMessage('Por favor introduce una fecha de expiración válida (MM/AA).');
+        return;
+      }
+      if (cardCvc.length < 3) {
+        setErrorMessage('Por favor introduce el código de seguridad (CVC).');
+        return;
+      }
     }
 
     // Validación de stock final
@@ -268,7 +301,7 @@ export default function CheckoutForm({
       quantity: item.quantity
     }));
 
-    apiCheckout(items, paymentMethod, receiptBase64, {
+    apiCheckout(items, paymentMethod, undefined, {
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
@@ -279,7 +312,8 @@ export default function CheckoutForm({
         zipCode: zip.trim()
       },
       total: total,
-      discountApplied: discountPercent
+      discountApplied: discountPercent,
+      bankDetails: bankSettings
     })
       .then(async (res) => {
         setOrderNumber(res.orderId);
@@ -307,7 +341,7 @@ export default function CheckoutForm({
           }
         }
 
-        // Crear objeto orden legado para mantener sincronía con el admin panel frontal
+        // Crear objeto orden sincronizado con el admin panel frontal
         const legacyOrder: Order = {
           id: res.orderId,
           customerEmail: email.trim(),
@@ -321,7 +355,7 @@ export default function CheckoutForm({
           })),
           total: total,
           discountApplied: discountPercent,
-          status: 'Pendiente',
+          status: paymentMethod === 'Stripe' ? 'PAGADO' : 'Pendiente',
           date: new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }),
           address: {
             street: address.trim(),
@@ -330,8 +364,8 @@ export default function CheckoutForm({
             zipCode: zip.trim()
           },
           paymentMethod: paymentMethod,
-          paymentReceipt: paymentMethod === 'Transferencia' ? receiptBase64 : undefined,
-          paymentReceiptName: paymentMethod === 'Transferencia' ? receiptName : undefined,
+          paymentReceipt: undefined,
+          paymentReceiptName: undefined,
         };
         onPlaceOrder(legacyOrder);
         onSuccess(); // Limpiar el carrito de compras
@@ -412,8 +446,8 @@ export default function CheckoutForm({
             </p>
           </div>
 
-          {/* Simulador de Correo Webmail (SPEI) */}
-          {paymentMethod === 'Transferencia' && simulatedEmail && (
+          {/* Simulador de Correo Webmail */}
+          {simulatedEmail && (
             <div style={{ 
               width: '100%', 
               maxWidth: '650px', 
@@ -491,7 +525,36 @@ export default function CheckoutForm({
             </div>
           )}
 
-          {/* Resumen e información complementaria de envío si es efectivo */}
+          {/* Resumen e información complementaria según método */}
+          {paymentMethod === 'Stripe' && (
+            <div style={{
+              backgroundColor: 'rgba(99, 102, 241, 0.05)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              borderRadius: '12px',
+              padding: '20px 24px',
+              textAlign: 'left',
+              width: '100%',
+              maxWidth: '500px',
+              marginInline: 'auto'
+            }}>
+              <h4 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', color: 'white', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '16px' }}>💳</span> Pago Confirmado con Tarjeta (Stripe)
+              </h4>
+              <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+                Tu cobro de <strong>${total.toLocaleString('es-MX')} MXN</strong> fue procesado y validado de forma instantánea con Stripe. Tu pedido ya está marcado como <strong style={{ color: '#4ade80' }}>PAGADO</strong> y tus artículos han sido descontados del inventario.
+              </p>
+
+              <h4 style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', color: 'white', marginBottom: '4px' }}>
+                Dirección de Envío:
+              </h4>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                {address} <br />
+                Col. {city}, {state}, CP {zip} <br />
+                México
+              </p>
+            </div>
+          )}
+
           {paymentMethod === 'Efectivo' && (
             <div style={{
               backgroundColor: 'rgba(255,255,255,0.02)',
@@ -759,35 +822,41 @@ export default function CheckoutForm({
                 marginBottom: '20px'
               }} className="grid-mobile-1col">
                 <div 
-                  onClick={() => setPaymentMethod('Transferencia')}
+                  onClick={() => setPaymentMethod('Stripe')}
                   style={{
                     padding: '16px',
                     borderRadius: '8px',
-                    border: paymentMethod === 'Transferencia' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                    backgroundColor: paymentMethod === 'Transferencia' ? 'rgba(255, 62, 62, 0.04)' : 'transparent',
+                    border: paymentMethod === 'Stripe' ? '2px solid #6366f1' : '1px solid var(--border-color)',
+                    backgroundColor: paymentMethod === 'Stripe' ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     textAlign: 'center'
                   }}
                 >
-                  <strong style={{ color: '#fff', display: 'block', fontSize: '14px' }}>Transferencia SPEI</strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Transfiere desde tu banca móvil</span>
+                  <strong style={{ color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '14px' }}>
+                    <CreditCard size={16} style={{ color: '#818cf8' }} /> Tarjeta (Stripe)
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Débito / Crédito · Inmediato</span>
                 </div>
+
                 <div 
                   onClick={() => setPaymentMethod('Efectivo')}
                   style={{
                     padding: '16px',
                     borderRadius: '8px',
-                    border: paymentMethod === 'Efectivo' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                    backgroundColor: paymentMethod === 'Efectivo' ? 'rgba(255, 62, 62, 0.04)' : 'transparent',
+                    border: paymentMethod === 'Efectivo' ? '2px solid #10b981' : '1px solid var(--border-color)',
+                    backgroundColor: paymentMethod === 'Efectivo' ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     textAlign: 'center'
                   }}
                 >
-                  <strong style={{ color: '#fff', display: 'block', fontSize: '14px' }}>Pago en Efectivo</strong>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Liquida en sucursal física</span>
+                  <strong style={{ color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '14px' }}>
+                    <Store size={16} style={{ color: '#34d399' }} /> Recoger en Tienda
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Aparta y paga en local / SPEI</span>
                 </div>
+
                 {bankSettings.paypalActive === 'true' && (
                   <div 
                     onClick={() => setPaymentMethod('PayPal')}
@@ -801,111 +870,194 @@ export default function CheckoutForm({
                       textAlign: 'center'
                     }}
                   >
-                    <strong style={{ color: '#fff', display: 'block', fontSize: '14px' }}>PayPal / Tarjeta</strong>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tarjeta, Débito o Saldo</span>
+                    <strong style={{ color: '#fff', display: 'block', fontSize: '14px' }}>PayPal</strong>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Saldo o Tarjetas</span>
                   </div>
                 )}
               </div>
 
               {/* Contenido Condicional del Método */}
-              {paymentMethod === 'Transferencia' ? (
+              {paymentMethod === 'Stripe' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {/* Datos Bancarios */}
+                  {/* Tarjeta de Crédito con diseño elegante */}
                   <div style={{
-                    backgroundColor: 'rgba(255,255,255,0.02)',
-                    border: '1px solid var(--border-color)',
-                    padding: '16px',
-                    borderRadius: '8px',
-                    fontSize: '13.5px',
-                    color: 'white',
-                    lineHeight: 1.6
+                    background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%)',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
                   }}>
-                    <strong style={{ color: 'var(--secondary)', display: 'block', marginBottom: '8px' }}>SPEI Datos de la Cuenta:</strong>
-                    <strong>Banco:</strong> {bankSettings.bankName} <br />
-                    <strong>CLABE Interbancaria:</strong> <span style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}>{bankSettings.clabe}</span> <br />
-                    <strong>Titular:</strong> {bankSettings.beneficiary}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Lock size={12} /> Pago Protegido vía Stripe
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <span style={{ fontSize: '10px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: '#e2e8f0', fontWeight: 600 }}>VISA</span>
+                        <span style={{ fontSize: '10px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: '#e2e8f0', fontWeight: 600 }}>MC</span>
+                        <span style={{ fontSize: '10px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', color: '#e2e8f0', fontWeight: 600 }}>AMEX</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
+                          Número de Tarjeta
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="4242 4242 4242 4242"
+                          maxLength={19}
+                          value={cardNumber}
+                          onChange={handleCardNumberChange}
+                          style={{
+                            width: '100%',
+                            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: '6px',
+                            padding: '10px 12px',
+                            color: 'white',
+                            fontSize: '15px',
+                            fontFamily: 'monospace',
+                            letterSpacing: '0.08em',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
+                          Nombre del Titular (como aparece en la tarjeta)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="LUIS GONZALEZ"
+                          value={cardName}
+                          onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                          style={{
+                            width: '100%',
+                            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: '6px',
+                            padding: '10px 12px',
+                            color: 'white',
+                            fontSize: '13px',
+                            textTransform: 'uppercase',
+                            outline: 'none'
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
+                            Vencimiento (MM/AA)
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="12/28"
+                            maxLength={5}
+                            value={cardExpiry}
+                            onChange={handleCardExpiryChange}
+                            style={{
+                              width: '100%',
+                              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              borderRadius: '6px',
+                              padding: '10px 12px',
+                              color: 'white',
+                              fontSize: '14px',
+                              fontFamily: 'monospace',
+                              textAlign: 'center',
+                              outline: 'none'
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 600 }}>
+                            CVC / CVV
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="123"
+                            maxLength={4}
+                            value={cardCvc}
+                            onChange={handleCardCvcChange}
+                            style={{
+                              width: '100%',
+                              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              borderRadius: '6px',
+                              padding: '10px 12px',
+                              color: 'white',
+                              fontSize: '14px',
+                              fontFamily: 'monospace',
+                              textAlign: 'center',
+                              outline: 'none'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Carga de Comprobante */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      Subir Comprobante de Pago (Opcional, acelera tu procesamiento)
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        id="checkoutReceiptInput"
-                        onChange={handleReceiptChange}
-                        style={{
-                          flexGrow: 1,
-                          backgroundColor: 'rgba(6, 8, 12, 0.5)',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '8px',
-                          padding: '10px 12px',
-                          color: 'white',
-                          fontSize: '13px',
-                          outline: 'none',
-                          cursor: 'pointer'
-                        }}
-                      />
-                      {receiptBase64 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setReceiptBase64('');
-                            setReceiptName('');
-                            const fileInput = document.getElementById('checkoutReceiptInput') as HTMLInputElement | null;
-                            if (fileInput) fileInput.value = '';
-                          }}
-                          style={{
-                            backgroundColor: 'rgba(255, 62, 62, 0.15)',
-                            border: '1px solid #ff3e3e',
-                            color: '#ff6b6b',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: 700
-                          }}
-                        >
-                          Quitar
-                        </button>
-                      )}
-                    </div>
-                    {receiptBase64 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                        <img src={receiptBase64} alt="Preview" style={{ height: '30px', width: '30px', objectFit: 'contain', borderRadius: '4px', border: '1px solid var(--border-color)' }} />
-                        <span style={{ fontSize: '11px', color: '#34d399', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>✓ {receiptName}</span>
-                      </div>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                    <ShieldCheck size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                    <span>El cobro se valida de inmediato al 100%. Tus cartas se apartan y descuentan de inventario al instante.</span>
                   </div>
                 </div>
               ) : paymentMethod === 'Efectivo' ? (
-                <div style={{
-                  display: 'flex', flexDirection: 'column', gap: '12px'
-                }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Banner Apartado */}
                   <div style={{
-                    backgroundColor: 'rgba(52, 211, 153, 0.05)',
-                    border: '1px solid rgba(52, 211, 153, 0.2)',
-                    padding: '16px', borderRadius: '8px',
-                    fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6
+                    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    padding: '18px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.6
                   }}>
-                    <span style={{ fontSize: '16px', marginRight: '8px' }}>📍</span>
-                    <strong style={{ color: 'white' }}>Pago en Sucursal (Efectivo):</strong>
-                    <span> Puedes recoger tu pedido en nuestra sucursal y liquidar en efectivo al momento del retiro. Te contactaremos para confirmar los horarios.</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontWeight: 700, marginBottom: '6px', fontSize: '14px' }}>
+                      <Store size={18} /> Apartado Oficial para Recoger en Tienda
+                    </div>
+                    <span>
+                      Tus cartas quedarán <strong>reservadas a tu nombre durante 48 horas</strong> en nuestra sucursal física.
+                    </span>
                   </div>
 
-                  {bankSettings.whatsapp ? (
+                  {/* Instrucciones Claras */}
+                  <div style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid var(--border-color)',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    fontSize: '12.5px',
+                    color: '#e2e8f0',
+                    lineHeight: 1.6
+                  }}>
+                    <p style={{ margin: '0 0 10px 0' }}>
+                      💵 <strong>Pago al acudir al local:</strong> Puedes liquidar en efectivo o con tarjeta física al llegar a la tienda.
+                    </p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+                      ⚡ <strong>¿Prefieres adelantar por SPEI para recoger sin esperas?</strong> Al confirmar tu pedido te enviaremos por correo nuestra CLABE interbancaria oficial y tu número de referencia para que transfieras si lo deseas.
+                    </p>
+                  </div>
+
+                  {bankSettings.whatsapp && (
                     <a
-                      href={`https://wa.me/${bankSettings.whatsapp}?text=${encodeURIComponent(`Hola PokéVault, quiero coordinar la entrega de mi pedido. Total: $${total.toLocaleString('es-MX')} MXN`)}`}
+                      href={`https://wa.me/${bankSettings.whatsapp}?text=${encodeURIComponent(`Hola PokéVault, quiero coordinar la entrega de mi apartado. Total: $${total.toLocaleString('es-MX')} MXN`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                         backgroundColor: '#1ba24c', color: 'white',
                         padding: '12px 20px', borderRadius: '8px',
-                        fontWeight: 700, fontSize: '14px', textDecoration: 'none',
+                        fontWeight: 700, fontSize: '13.5px', textDecoration: 'none',
                         transition: 'background 0.2s'
                       }}
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#17a84a')}
@@ -915,12 +1067,8 @@ export default function CheckoutForm({
                         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                         <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.11 1.523 5.836L0 24l6.335-1.48A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.374l-.36-.214-3.726.871.93-3.62-.234-.373A9.818 9.818 0 1112 21.818z"/>
                       </svg>
-                      Contactar por WhatsApp
+                      Coordinar Entrega por WhatsApp
                     </a>
-                  ) : (
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-                      El administrador configurará el WhatsApp de contacto en el panel.
-                    </p>
                   )}
                 </div>
               ) : (
@@ -933,7 +1081,7 @@ export default function CheckoutForm({
                   }}>
                     <span style={{ fontSize: '16px', marginRight: '8px' }}>💳</span>
                     <strong style={{ color: 'white' }}>Pago Seguro con PayPal / Tarjeta:</strong>
-                    <span> Haz clic en el botón de abajo para liquidar de forma segura. Admite tarjetas de débito/crédito y saldo PayPal.</span>
+                    <span> Haz clic en el botón de abajo para liquidar de forma segura con PayPal.</span>
                   </div>
                   {/* PayPal buttons container */}
                   <div style={{ marginTop: '10px' }}>
@@ -958,7 +1106,7 @@ export default function CheckoutForm({
               )}
             </div>
 
-            {/* Botón Guardar Pedido */}
+            {/* Botón Registrar / Pagar Pedido */}
             {paymentMethod !== 'PayPal' && (
               <button 
                 type="submit" 
@@ -966,23 +1114,26 @@ export default function CheckoutForm({
                 className="btn btn-primary" 
                 style={{
                   width: '100%',
-                  padding: '14px',
+                  padding: '16px',
                   fontSize: '16px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
-                  boxShadow: '0 0 20px var(--primary-glow)'
+                  background: paymentMethod === 'Stripe' ? 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)' : undefined,
+                  boxShadow: paymentMethod === 'Stripe' ? '0 0 25px rgba(99, 102, 241, 0.45)' : '0 0 20px var(--primary-glow)'
                 }}
               >
                 {loading ? (
                   <>
                     <Loader2 size={18} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
-                    Registrando Pedido...
+                    {paymentMethod === 'Stripe' ? 'Procesando Pago con Stripe...' : 'Apartando tus Artículos...'}
                   </>
                 ) : (
-                  `Registrar Compra por $${total.toLocaleString('es-MX')} MXN`
+                  paymentMethod === 'Stripe'
+                    ? `💳 Pagar $${total.toLocaleString('es-MX')} MXN con Tarjeta (Stripe)`
+                    : `🏪 Confirmar Apartado en Tienda ($${total.toLocaleString('es-MX')} MXN)`
                 )}
               </button>
             )}

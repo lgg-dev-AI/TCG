@@ -117,8 +117,9 @@ router.post('/', async (req, res) => {
 
     // Generar ID de pedido corto y legible para el cliente (ej. PV-123456)
     const orderIdShort = 'PV-' + Math.floor(100000 + Math.random() * 900000);
-    const status = paymentMethod === 'PayPal' ? 'PAGADO' : 'PENDIENTE';
-    const trackingNumber = paymentMethod === 'PayPal' ? `PAYPAL - ID: ${paymentReceipt || 'N/A'}` : null;
+    const isPaidOnline = paymentMethod === 'Stripe' || paymentMethod === 'PayPal';
+    const status = isPaidOnline ? 'PAGADO' : 'PENDIENTE';
+    const trackingNumber = isPaidOnline ? `STRIPE - ID: ${orderIdShort}` : (paymentMethod === 'Efectivo' ? 'RECOGER EN TIENDA' : null);
     
     await run(
       'INSERT INTO orders (id, user_id, total, status, tracking_number) VALUES (?, ?, ?, ?, ?)',
@@ -161,6 +162,61 @@ router.post('/', async (req, res) => {
     const user = await get('SELECT email FROM users WHERE id = ?', [userId]);
     const userEmail = user ? user.email : emailToUse;
 
+    // Encabezado según método
+    const headerTitle = isPaidOnline ? '¡Compra Pagada con Éxito!' : '¡Pedido Apartado para Recoger en Tienda!';
+    const subtitle = isPaidOnline ? 'Pago Verificado vía Stripe' : 'Reserva Oficial de Artículos (48 hrs)';
+
+    // Instrucciones dinámicas
+    let instructionsHtml = '';
+    if (paymentMethod === 'Stripe') {
+      instructionsHtml = `
+        <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.35); padding: 18px 20px; border-radius: 12px; margin-bottom: 22px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h4 style="margin: 0; color: #818cf8; font-size: 14px; font-weight: 700;">💳 Pago Aprobado con Tarjeta</h4>
+            <span style="font-size: 10px; background: #6366f1; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-transform: uppercase;">STRIPE VERIFIED</span>
+          </div>
+          <p style="margin: 0 0 6px 0; font-size: 13px; color: #e2e8f0; line-height: 1.5;">
+            Estado: <strong style="color: #4ade80;">PAGADO Y CONFIRMADO</strong>. Tus cartas han sido descontadas del inventario y están siendo preparadas.
+          </p>
+          <p style="margin: 0; font-size: 11.5px; color: #94a3b8;">
+            ID de Referencia: <strong>${orderIdShort}</strong>
+          </p>
+        </div>
+      `;
+    } else {
+      instructionsHtml = `
+        <!-- Bloque Efectivo / Tienda -->
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 18px 20px; border-radius: 12px; margin-bottom: 18px;">
+          <h4 style="margin: 0 0 8px 0; color: #34d399; font-size: 14px; font-weight: 700;">
+            💵 ¿Planeas pagar en efectivo o tarjeta física al llegar a la tienda?
+          </h4>
+          <p style="margin: 0; font-size: 13px; color: #e2e8f0; line-height: 1.5;">
+            <strong>¡Haz caso omiso a los datos bancarios!</strong> Te esperamos con mucho gusto en nuestro local físico. Únicamente menciona este correo o tu número de pedido: <strong style="color: #ffcb05;">#${orderIdShort}</strong> al llegar para liquidar y recibir tus cartas.
+          </p>
+        </div>
+
+        <!-- Bloque Depósito / Transferencia Opcional para Agilizar -->
+        <div style="background: rgba(255, 203, 5, 0.06); border: 1px solid rgba(255, 203, 5, 0.3); padding: 18px 20px; border-radius: 12px; margin-bottom: 22px;">
+          <h4 style="margin: 0 0 8px 0; color: #ffcb05; font-size: 14px; font-weight: 700;">
+            ⚡ ¿Deseas adelantar tu pago por transferencia SPEI para agilizar tu entrega?
+          </h4>
+          <p style="margin: 0 0 12px 0; font-size: 12.5px; color: #cbd5e1; line-height: 1.5;">
+            Si prefieres pagar antes de venir y recoger tus cartas de inmediato sin filas ni esperas de cobro, puedes transferir a nuestra cuenta oficial:
+          </p>
+          <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 203, 5, 0.2); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; line-height: 1.8; color: #f1f5f9;">
+            <div>Banco: <strong style="color: #ffffff;">${dbBankSettings.bankName}</strong></div>
+            <div>CLABE Interbancaria: <strong style="color: #ffcb05; font-family: monospace; letter-spacing: 1px; font-size: 13.5px;">${dbBankSettings.clabe}</strong></div>
+            <div>Titular / Beneficiario: <strong style="color: #ffffff;">${dbBankSettings.beneficiary}</strong></div>
+            <div>Concepto / Referencia: <strong style="color: #38bdf8; font-weight: 700;">${orderIdShort}</strong></div>
+            <div>Monto exacto: <strong style="color: #ff3e3e; font-weight: 700;">$${totalAmount.toLocaleString('es-MX')} MXN</strong></div>
+          </div>
+          <p style="margin: 10px 0 0 0; font-size: 11px; color: #94a3b8; font-style: italic;">
+            *Al acudir a la tienda, solo muestra la confirmación de tu banco en tu celular y te entregamos tu paquete al instante.
+          </p>
+        </div>
+      `;
+    }
+
     // Generar cuerpo HTML de correo con colores de Pokébola y datos bancarios dinámicos
     const emailHtmlBody = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0e1118; color: #ffffff; padding: 40px 20px; max-width: 600px; margin: 0 auto; border-radius: 16px; border: 1px solid #1a2233;">
@@ -171,12 +227,12 @@ router.post('/', async (req, res) => {
             <div style="width: 16px; height: 16px; background: white; border-radius: 50%; border: 3px solid #000; position: absolute; top: 13px; left: 13px; box-sizing: border-box; z-index: 10;"></div>
           </div>
           <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 12px 0 0 0; letter-spacing: 0.05em; text-transform: uppercase;">PokéVault</h1>
-          <span style="font-size: 10px; color: #ffcb05; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">Confirmación de Pedido</span>
+          <span style="font-size: 10px; color: #ffcb05; text-transform: uppercase; font-weight: 700; letter-spacing: 0.1em;">${subtitle}</span>
         </div>
         <div style="padding: 30px 24px; background-color: #161b26; border-radius: 0 0 12px 12px;">
-          <h2 style="font-size: 18px; color: #ffffff; margin-top: 0; font-weight: 700; text-align: center;">¡Pedido Registrado con Éxito!</h2>
+          <h2 style="font-size: 18px; color: #ffffff; margin-top: 0; font-weight: 700; text-align: center;">${headerTitle}</h2>
           <p style="font-size: 13px; color: #a0aec0; line-height: 1.6; text-align: center; margin-bottom: 24px;">
-            Hola, gracias por comprar en <strong>PokéVault</strong>. Hemos registrado tu pedido número <strong style="color: #ffffff;">${orderIdShort}</strong>. Tu pedido está en estado <strong style="color: #ffcb05;">PENDIENTE</strong> hasta que se valide tu transferencia bancaria.
+            Hola, gracias por comprar en <strong>PokéVault</strong>. Hemos registrado tu pedido número <strong style="color: #ffcb05;">${orderIdShort}</strong>.
           </p>
 
           <!-- Resumen de Artículos -->
@@ -200,22 +256,11 @@ router.post('/', async (req, res) => {
             </tfoot>
           </table>
 
-          <!-- Instrucciones de Pago -->
-          <div style="background-color: rgba(255, 203, 5, 0.03); border: 1px solid rgba(255, 203, 5, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-            <h4 style="font-size: 13px; color: #ffcb05; font-weight: 800; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.05em;">Datos de Transferencia SPEI para Pago:</h4>
-            <p style="font-size: 13px; color: #ffffff; margin: 0; line-height: 1.6;">
-              <strong>Banco:</strong> ${dbBankSettings.bankName} <br />
-              <strong>CLABE Interbancaria:</strong> <span style="font-family: monospace; letter-spacing: 0.05em; color: #ffcb05;">${dbBankSettings.clabe}</span> <br />
-              <strong>Beneficiario:</strong> ${dbBankSettings.beneficiary} <br />
-              <strong>Monto exacto a transferir:</strong> <strong style="color: #ff3e3e;">$${totalAmount.toLocaleString('es-MX')} MXN</strong>
-            </p>
-            <div style="margin-top: 14px; border-top: 1px dashed rgba(255, 203, 5, 0.2); padding-top: 12px; font-size: 11px; color: #a0aec0; line-height: 1.5;">
-              ⚠️ Una vez realizada la transferencia, envía tu comprobante a <strong style="color: #ffffff;">soporte@pokevault.mx</strong> indicando tu número de orden: <strong style="color: #ffffff;">${orderIdShort}</strong>.
-            </div>
-          </div>
+          <!-- Instrucciones de Pago / Entrega -->
+          ${instructionsHtml}
 
           <p style="font-size: 11px; color: #718096; text-align: center; border-top: 1px solid #1a2233; padding-top: 16px; margin: 0;">
-            Este es un correo simulado de confirmación enviado por PokéVault. <br />
+            Confirmación oficial de PokéVault México. <br />
             ¡Gracias por tu compra, Entrenador!
           </p>
         </div>
