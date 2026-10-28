@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
-import { multiTcgSearch, fetchPokemonExpansionsForCard, fetchCardPricingDetail, type CardSearchResult } from '../services/multiTcgApi';
+import { multiTcgSearch, fetchPokemonExpansionsForCard, fetchCardPricingDetail, prefetchOnePieceCards, type CardSearchResult } from '../services/multiTcgApi';
 import { TCG_EXPANSIONS } from '../data/tcgExpansions';
 import { ALL_POKEMON_NAMES } from '../data/pokemonNames';
 import { getTcgCharacterSuggestions } from '../data/tcgCharacterNames';
@@ -222,6 +222,13 @@ export default function AdminPanel({
 
     return () => clearTimeout(timer);
   }, [apiSearchQuery, newProdGameType]);
+
+  // Precargar catálogo masivo de One Piece (3,654 cartas) en background
+  useEffect(() => {
+    if (newProdGameType === 'ONEPIECE') {
+      prefetchOnePieceCards();
+    }
+  }, [newProdGameType]);
 
   // States for CSV Catalog Import
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -1442,6 +1449,7 @@ export default function AdminPanel({
                         onChange={(e) => {
                           const gt = e.target.value;
                           setNewProdGameType(gt);
+                          setNewProdPulledFrom('');
                           setApiSearchResults([]);
                           setApiSearchError(null);
                           setShowTcgSuggestions(false);
@@ -1466,31 +1474,32 @@ export default function AdminPanel({
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: newProdGameType === 'POKEMON' ? '280px 1fr auto' : '1fr auto', gap: '10px', alignItems: 'center', position: 'relative' }}>
-                    {/* Selector de Sobre de Origen / Expansión (Solo Pokémon muestra expansiones dinámicas) */}
-                    {newProdGameType === 'POKEMON' && (
-                      <select
-                        value={newProdPulledFrom}
-                        onChange={(e) => {
-                          setNewProdPulledFrom(e.target.value);
-                          if (e.target.value) {
-                            setNewProdExpansion(e.target.value);
-                          }
-                        }}
-                        style={{ ...getFormInputStyle(), padding: '10px 12px' }}
-                      >
-                        <option value="">
-                          {loadingExpansions 
-                            ? '⏳ Buscando expansiones...' 
-                            : dynamicExpansions.length > 0 
-                              ? `🌐 Todas las Expansiones de "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
-                              : '🌐 Todas las Expansiones (Todas)'}
-                        </option>
-                        {(dynamicExpansions.length > 0 ? dynamicExpansions : TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
-                          <option key={exp} value={exp}>{exp}</option>
-                        ))}
-                      </select>
-                    )}
+                  <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr auto', gap: '10px', alignItems: 'center', position: 'relative' }}>
+                    {/* Selector de Sobre de Origen / Expansión del TCG seleccionado */}
+                    <select
+                      value={newProdPulledFrom}
+                      onChange={(e) => {
+                        setNewProdPulledFrom(e.target.value);
+                        if (e.target.value) {
+                          setNewProdExpansion(e.target.value);
+                        }
+                      }}
+                      style={{ ...getFormInputStyle(), padding: '10px 12px' }}
+                    >
+                      <option value="">
+                        {loadingExpansions && newProdGameType === 'POKEMON'
+                          ? '⏳ Buscando expansiones...' 
+                          : dynamicExpansions.length > 0 && newProdGameType === 'POKEMON'
+                            ? `🌐 Expansiones de "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
+                            : `🌐 Todas las Expansiones (${newProdGameType})`}
+                      </option>
+                      {(dynamicExpansions.length > 0 && newProdGameType === 'POKEMON' 
+                        ? dynamicExpansions 
+                        : TCG_EXPANSIONS[newProdGameType] || []
+                      ).map((exp) => (
+                        <option key={exp} value={exp}>{exp}</option>
+                      ))}
+                    </select>
 
                     {/* Input de Nombre con Combobox / Autocomplete Multi-TCG */}
                     <div ref={tcgSuggestionsRef} style={{ position: 'relative', width: '100%' }}>

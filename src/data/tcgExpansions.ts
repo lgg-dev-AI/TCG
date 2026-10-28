@@ -1,4 +1,4 @@
-// Lista exhaustiva y categorizada de expansiones / sobres de Pokémon TCG
+// Lista exhaustiva y categorizada de expansiones / sobres de los juegos TCG
 export const TCG_EXPANSIONS: Record<string, string[]> = {
   POKEMON: [
     'Ancient Origins',
@@ -80,6 +80,73 @@ export const TCG_EXPANSIONS: Record<string, string[]> = {
     'Unified Minds',
     'Vivid Voltage',
     'XY'
+  ],
+  ONEPIECE: [
+    'Romance Dawn (OP-01)',
+    'Paramount War (OP-02)',
+    'Pillars of Strength (OP-03)',
+    'Kingdoms of Intrigue (OP-04)',
+    'Awakening of the New Era (OP-05)',
+    'Wings of the Captain (OP-06)',
+    '500 Years in the Future (OP-07)',
+    'Two Legends (OP-08)',
+    'Emperors in the New World (OP-09)',
+    'Royal Blood (OP-10)',
+    'A Fist of Divine Speed (OP-11)',
+    'Extra Booster: Memorial Collection (EB-01)',
+    'Extra Booster: Anime 25th Collection (EB-02)',
+    'Premium Booster - The Best (PRB-01)',
+    'Premium Booster - The Best Vol. 2 (PRB-02)',
+    'Starter Deck: Straw Hat Crew (ST-01)',
+    'Starter Deck: Worst Generation (ST-02)',
+    'Starter Deck: The Seven Warlords (ST-03)',
+    'Starter Deck: Animal Kingdom Pirates (ST-04)',
+    'Starter Deck: ONE PIECE FILM Edition (ST-05)',
+    'Starter Deck: Absolute Justice (ST-06)',
+    'Starter Deck: Big Mom Pirates (ST-07)',
+    'Starter Deck: Monkey D. Luffy (ST-08)',
+    'Starter Deck: Yamato (ST-09)',
+    'Starter Deck: The Three Captains (ST-10)',
+    'Starter Deck: Uta (ST-11)',
+    'Starter Deck: Zoro and Sanji (ST-12)',
+    'Starter Deck: 3D2Y (ST-13)'
+  ],
+  YUGIOH: [
+    'Legend of Blue Eyes White Dragon',
+    'Metal Raiders',
+    'Spell Ruler (Magic Ruler)',
+    'Pharaoh\'s Servant',
+    'Labyrinth of Nightmare',
+    'Legacy of Darkness',
+    'Pharaonic Guardian',
+    'Magician\'s Force',
+    'Dark Crisis',
+    'Invasion of Chaos',
+    'Ancient Sanctuary',
+    'Soul of the Duelist',
+    'Rise of Destiny',
+    'Flaming Eternity',
+    'The Lost Art Promotion',
+    '25th Anniversary Rarity Collection',
+    'Ghosts From the Past'
+  ],
+  MAGIC: [
+    'Alpha / Beta / Unlimited',
+    'Arabian Nights',
+    'Antiquities',
+    'Legends',
+    'The Dark',
+    'Revised Edition',
+    'Urza\'s Saga',
+    'Modern Horizons 3',
+    'The Lord of the Rings: Tales of Middle-earth',
+    'Commander Masters',
+    'Outlaws of Thunder Junction',
+    'Bloomburrow',
+    'Duskmourn: House of Horror',
+    'Foundations',
+    'Innistrad',
+    'Zendikar',
+    'Ravnica: City of Guilds'
   ]
 };
-

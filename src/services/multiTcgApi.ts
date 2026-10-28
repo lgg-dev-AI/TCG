@@ -183,6 +183,57 @@ export const fetchCardPricingDetail = async (cardId: string): Promise<{
   }
 };
 
+// Caché en memoria para todas las cartas oficiales de One Piece (más de 3,600 cartas)
+let onePieceAllCardsCache: CardSearchResult[] | null = null;
+let onePieceFetchPromise: Promise<CardSearchResult[]> | null = null;
+
+export const prefetchOnePieceCards = async (): Promise<CardSearchResult[]> => {
+  if (onePieceAllCardsCache && onePieceAllCardsCache.length > 0) {
+    return onePieceAllCardsCache;
+  }
+  if (onePieceFetchPromise) {
+    return onePieceFetchPromise;
+  }
+
+  onePieceFetchPromise = (async () => {
+    try {
+      const res = await fetch('https://optcgapi.com/api/allSetCards/');
+      if (res.ok) {
+        const rawData: any[] = await res.json();
+        if (Array.isArray(rawData) && rawData.length > 0) {
+          const mapped: CardSearchResult[] = rawData.map(c => {
+            const imgId = c.card_image_id || c.card_set_id;
+            const imgUrl = c.card_image || `https://optcgapi.com/media/static/Card_Images/${imgId}.jpg`;
+            return {
+              id: imgId,
+              name: c.card_name,
+              images: {
+                small: imgUrl,
+                large: imgUrl
+              },
+              set: {
+                id: c.set_id || 'OP',
+                name: c.set_name ? `${c.set_name} (${c.set_id})` : (c.set_id || 'One Piece Set')
+              },
+              game_type: 'ONEPIECE',
+              marketPrice: Math.round((c.market_price || c.inventory_price || 15) * 20)
+            };
+          });
+          onePieceAllCardsCache = mapped;
+          return mapped;
+        }
+      }
+    } catch (err) {
+      console.warn('Error precargando allSetCards de One Piece:', err);
+    } finally {
+      onePieceFetchPromise = null;
+    }
+    return POPULAR_ONE_PIECE_CARDS;
+  })();
+
+  return onePieceFetchPromise;
+};
+
 // Catálogo precargado de One Piece Card Game oficial con CDN de alta resolución
 const POPULAR_ONE_PIECE_CARDS: CardSearchResult[] = [
   {
@@ -662,95 +713,48 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
       }
 
       case 'ONEPIECE': {
-        // 1. Si el usuario ingresa un código de carta (ej. OP01-001, OP05-119, ST01-001)
-        if (cleanName) {
-          try {
-            const cardCodeMatch = cleanName.match(/^([a-zA-Z]{2,3})[-]?([0-9]{2})[-]?([0-9]{3})/i);
-            if (cardCodeMatch) {
-              const formattedCardId = `${cardCodeMatch[1].toUpperCase()}${cardCodeMatch[2]}-${cardCodeMatch[3]}`;
-              const res = await fetch(`https://optcgapi.com/api/sets/card/${formattedCardId}/`);
-              if (res.ok) {
-                const apiData = await res.json();
-                if (Array.isArray(apiData) && apiData.length > 0) {
-                  const mapped: CardSearchResult[] = apiData.map(c => ({
-                    id: c.card_image_id || c.card_set_id,
-                    name: c.card_name,
-                    images: {
-                      small: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`,
-                      large: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`
-                    },
-                    set: { id: c.set_id || 'OP', name: c.set_name || 'One Piece Set' },
-                    game_type: 'ONEPIECE',
-                    marketPrice: Math.round((c.market_price || c.inventory_price || 15) * 20)
-                  }));
-                  setCached(cacheKey, mapped);
-                  return mapped;
-                }
-              }
-            }
-
-            // Si el término coincide con un set (ej. OP-01, OP01, OP-02, OP02, etc.)
-            const setCodeMatch = cleanName.match(/^([a-zA-Z]{2,3})[-]?([0-9]{2})$/i);
-            if (setCodeMatch) {
-              const formattedSetId = `${setCodeMatch[1].toUpperCase()}-${setCodeMatch[2]}`;
-              const res = await fetch(`https://optcgapi.com/api/sets/${formattedSetId}/`);
-              if (res.ok) {
-                const setCards = await res.json();
-                if (Array.isArray(setCards) && setCards.length > 0) {
-                  const mapped: CardSearchResult[] = setCards.slice(0, 60).map(c => ({
-                    id: c.card_image_id || c.card_set_id,
-                    name: c.card_name,
-                    images: {
-                      small: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`,
-                      large: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`
-                    },
-                    set: { id: c.set_id || formattedSetId, name: c.set_name || formattedSetId },
-                    game_type: 'ONEPIECE',
-                    marketPrice: Math.round((c.market_price || c.inventory_price || 15) * 20)
-                  }));
-                  setCached(cacheKey, mapped);
-                  return mapped;
-                }
-              }
-            }
-          } catch (apiErr) {
-            console.warn('Error consultando optcgapi live:', apiErr);
-          }
-        }
-
-        // 2. Base de datos interna del backend si está disponible
+        // Cargar todo el catálogo masivo oficial (3,654 cartas de todas las expansiones)
+        let allCards: CardSearchResult[] = [];
         try {
-          const response = await fetch(`/api/catalog/search?game_type=ONEPIECE&q=${encodeURIComponent(query)}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-              const mapped = data.map((card: any) => ({
-                id: card.id,
-                name: card.name,
-                images: { small: card.image_url, large: card.image_url },
-                set: { id: 'unknown', name: card.expansion || 'One Piece Set' },
-                game_type: 'ONEPIECE',
-                marketPrice: Math.round(card.market_price || 0)
-              }));
-              setCached(cacheKey, mapped);
-              return mapped;
-            }
-          }
-        } catch {}
-
-        // 3. Fallback a catálogo precargado filtrado con URLs CDN oficiales
-        const lowerQ = cleanName.toLowerCase();
-        let matches = POPULAR_ONE_PIECE_CARDS.filter(c => 
-          c.name.toLowerCase().includes(lowerQ) || 
-          c.id.toLowerCase().includes(lowerQ) || 
-          (c.set?.name && c.set.name.toLowerCase().includes(lowerQ))
-        );
-        if (cleanExpansion) {
-          const lowerExp = cleanExpansion.toLowerCase();
-          matches = matches.filter(c => c.set?.name && c.set.name.toLowerCase().includes(lowerExp));
+          allCards = await prefetchOnePieceCards();
+        } catch {
+          allCards = POPULAR_ONE_PIECE_CARDS;
         }
 
-        const finalResults = matches.length > 0 ? matches : POPULAR_ONE_PIECE_CARDS;
+        if (!allCards || allCards.length === 0) {
+          allCards = POPULAR_ONE_PIECE_CARDS;
+        }
+
+        const lowerQ = cleanName.toLowerCase();
+        const lowerExp = cleanExpansion.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        let results = allCards;
+
+        // 1. Filtrar por término de búsqueda (nombre, id de carta ej: OP01-001, zoro, luffy...)
+        if (lowerQ) {
+          results = results.filter(c => {
+            const nameMatch = c.name.toLowerCase().includes(lowerQ);
+            const idMatch = c.id.toLowerCase().includes(lowerQ);
+            return nameMatch || idMatch;
+          });
+        }
+
+        // 2. Filtrar por expansión si el usuario seleccionó una
+        if (lowerExp) {
+          results = results.filter(c => {
+            const cleanSetName = (c.set?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cleanSetId = (c.set?.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return cleanSetName.includes(lowerExp) || lowerExp.includes(cleanSetId) || cleanSetId.includes(lowerExp);
+          });
+        }
+
+        // Si no hubo término ni expansión, mostrar las más populares
+        if (results.length === 0 && !lowerQ && !lowerExp) {
+          results = POPULAR_ONE_PIECE_CARDS;
+        }
+
+        // Devolver hasta 80 cartas ordenadas
+        const finalResults = results.slice(0, 80);
         setCached(cacheKey, finalResults);
         return finalResults;
       }
