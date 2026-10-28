@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, Truck, CreditCard, ChevronRight, ShoppingCart, Eye, Award, 
-  Flame, ChevronLeft
+  Flame, ChevronLeft, Package
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 
@@ -36,43 +36,35 @@ export default function Home({
     isPromo: true
   };
 
-  // Cartas más cotizadas y destacadas para el showcase de Home (Multi-TCG equilibrado)
-  const featuredShowcaseCards = React.useMemo(() => {
-    const singles = inventory.filter(p => p.category === 'single');
-    if (singles.length === 0) return inventory.slice(0, 10);
+  // Cajas Selladas, Booster Boxes & ETBs más buscadas de la tienda (Multi-TCG)
+  const featuredSealedProducts = React.useMemo(() => {
+    const sealed = inventory.filter(p => p.category === 'booster_box' || p.category === 'etb');
+    if (sealed.length === 0) return inventory.slice(0, 8);
 
-    const tcgTypes = ['ONE_PIECE', 'MAGIC', 'YUGIOH', 'LORCANA', 'POKEMON'];
+    const tcgTypes = ['ONE_PIECE', 'POKEMON', 'LORCANA', 'MAGIC', 'YUGIOH'];
     const selected: Product[] = [];
     const usedIds = new Set<string>();
 
-    // 1. Obtener las mejores cartas (top 2 por precio) de cada uno de los 5 TCGs
     tcgTypes.forEach(t => {
-      const gameSingles = singles
-        .filter(s => {
-          if (t === 'ONE_PIECE') return s.gameType === 'ONE_PIECE' || s.gameType === 'ONEPIECE';
-          if (t === 'POKEMON') return s.gameType === 'POKEMON' || !s.gameType;
-          return s.gameType === t;
-        })
-        .sort((a, b) => b.price - a.price);
-
-      gameSingles.slice(0, 2).forEach(card => {
-        if (!usedIds.has(card.id)) {
-          selected.push(card);
-          usedIds.add(card.id);
+      const match = sealed.filter(s => {
+        if (t === 'ONE_PIECE') return s.gameType === 'ONE_PIECE' || s.gameType === 'ONEPIECE';
+        if (t === 'POKEMON') return s.gameType === 'POKEMON' || !s.gameType;
+        return s.gameType === t;
+      });
+      match.slice(0, 2).forEach(box => {
+        if (!usedIds.has(box.id)) {
+          selected.push(box);
+          usedIds.add(box.id);
         }
       });
     });
 
-    // 2. Si faltan cartas para completar al menos 8 o 10, complementar con las más cotizadas
-    if (selected.length < 8) {
-      const remaining = [...singles]
-        .sort((a, b) => b.price - a.price)
-        .filter(c => !usedIds.has(c.id));
-      selected.push(...remaining.slice(0, 8 - selected.length));
+    if (selected.length < 6) {
+      const remaining = sealed.filter(b => !usedIds.has(b.id));
+      selected.push(...remaining.slice(0, 6 - selected.length));
     }
 
-    // Ordenar por valor de colección (precio descendente)
-    return selected.sort((a, b) => b.price - a.price);
+    return selected;
   }, [inventory]);
 
   // Referencia para el efecto 3D Holográfico
@@ -297,6 +289,25 @@ export default function Home({
     return result.length > 0 ? result : singles;
   }, [inventory]);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [carouselFilter, setCarouselFilter] = useState<string>('ALL');
+
+  const carouselFilterOptions = [
+    { id: 'ALL', label: '✨ Todos los TCG' },
+    { id: 'POKEMON', label: '⚡ Pokémon' },
+    { id: 'ONE_PIECE', label: '🏴‍☠️ One Piece' },
+    { id: 'MAGIC', label: '🔮 Magic' },
+    { id: 'YUGIOH', label: '🐉 Yu-Gi-Oh!' },
+    { id: 'LORCANA', label: '🏰 Disney Lorcana' },
+  ];
+
+  const displayCarouselCards = React.useMemo(() => {
+    if (carouselFilter === 'ALL') return carouselCards;
+    return carouselCards.filter(c => {
+      if (carouselFilter === 'ONE_PIECE') return c.gameType === 'ONE_PIECE' || c.gameType === 'ONEPIECE';
+      if (carouselFilter === 'POKEMON') return c.gameType === 'POKEMON' || !c.gameType;
+      return c.gameType === carouselFilter;
+    });
+  }, [carouselCards, carouselFilter]);
 
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
@@ -320,7 +331,7 @@ export default function Home({
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [carouselCards]);
+  }, [displayCarouselCards]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '50px', paddingBottom: '60px' }}>
@@ -476,42 +487,145 @@ export default function Home({
         </div>
       </section>
 
-      {/* 2. CARTAS MÁS COTIZADAS & NOVEDADES (Opción B: Showcase Real de Productos) */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '10px' }}>
+      {/* 2. BÓVEDA DE SINGLES: CARRUSEL MULTI-TCG CON AUTO-SCROLL */}
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
           <div>
             <span style={{ fontSize: '11px', color: '#ffcb05', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-              Colección Exclusiva Multi-TCG
+              🃏 Bóveda de Singles Multi-TCG
             </span>
             <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'white', margin: '4px 0 0 0', fontFamily: 'var(--font-heading)' }}>
-              Cartas Más Cotizadas & Novedades
+              Cartas Sueltas Destacadas & Más Cotizadas
             </h2>
           </div>
-          <button
-            onClick={onExploreClick}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#60a5fa',
-              fontSize: '13px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            Ver catálogo completo <ChevronRight size={14} />
-          </button>
+          
+          {/* Botones del Carrusel */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => onExploreCategory('single')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#60a5fa',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '6px 8px'
+              }}
+            >
+              Ver todos los singles <ChevronRight size={14} />
+            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => scrollCarousel('left')}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  border: '1px solid var(--border-color)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 62, 62, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                title="Desplazar a la izquierda"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button 
+                onClick={() => scrollCarousel('right')}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                  border: '1px solid var(--border-color)',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 62, 62, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                title="Desplazar a la derecha"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Grid de Productos Reales Destacados */}
+        {/* Píldoras de Filtro Rápido por Franquicia TCG */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
-          gap: '20px'
-        }}>
-          {featuredShowcaseCards.map(product => {
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          paddingBottom: '4px',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }} className="carousel-scrollbar-hide">
+          {carouselFilterOptions.map(opt => {
+            const isActive = carouselFilter === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => {
+                  setCarouselFilter(opt.id);
+                  if (carouselRef.current) {
+                    carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                  }
+                }}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: isActive ? 800 : 600,
+                  border: isActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                  backgroundColor: isActive ? 'rgba(255, 62, 62, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                  color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s ease',
+                  boxShadow: isActive ? '0 0 12px rgba(255, 62, 62, 0.3)' : 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.04)';
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Contenedor del Scroll Carrusel */}
+        <div 
+          ref={carouselRef}
+          style={{
+            display: 'flex',
+            gap: '20px',
+            overflowX: 'auto',
+            scrollBehavior: 'smooth',
+            paddingBottom: '16px',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+          className="carousel-scrollbar-hide"
+        >
+          {displayCarouselCards.map((product) => {
             const gameColor = 
               product.gameType === 'LORCANA' ? '#a855f7' :
               product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? '#06b6d4' :
@@ -519,163 +633,145 @@ export default function Home({
               product.gameType === 'MAGIC' ? '#f97316' : '#ffcb05';
 
             const gameLabel = 
-              product.gameType === 'LORCANA' ? 'Disney Lorcana' :
+              product.gameType === 'LORCANA' ? 'Lorcana' :
               product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'One Piece' :
               product.gameType === 'YUGIOH' ? 'Yu-Gi-Oh!' :
               product.gameType === 'MAGIC' ? 'Magic' : 'Pokémon';
 
             return (
-              <div
+              <div 
                 key={product.id}
                 className="glass"
                 style={{
-                  borderRadius: '16px',
-                  padding: '16px',
+                  minWidth: '220px',
+                  maxWidth: '220px',
+                  borderRadius: '14px',
+                  padding: '14px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
-                  backgroundColor: 'rgba(14, 18, 28, 0.75)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  transition: 'all 0.25s ease',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  justifyContent: 'space-between',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'rgba(22, 27, 38, 0.5)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.transform = 'translateY(-6px)';
                   e.currentTarget.style.borderColor = gameColor;
-                  e.currentTarget.style.boxShadow = `0 12px 30px ${gameColor}25`;
+                  e.currentTarget.style.boxShadow = `0 12px 24px ${gameColor}20`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
+                onClick={() => onViewProductDetails(product)}
               >
-                {/* Badges superiores */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: `${gameColor}20`,
-                    color: gameColor,
-                    border: `1px solid ${gameColor}40`,
-                    textTransform: 'uppercase'
-                  }}>
-                    {gameLabel}
-                  </span>
-                  <span style={{
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                    color: '#34d399',
-                    border: '1px solid rgba(16, 185, 129, 0.3)'
-                  }}>
-                    {product.cardCondition || 'NM'}
-                  </span>
-                </div>
-
-                {/* Imagen del Producto */}
-                <div 
-                  onClick={() => onViewProductDetails(product)}
-                  style={{
-                    height: '210px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    padding: '8px 0'
-                  }}
-                >
-                  <img
-                    src={product.image}
-                    alt={product.name}
+                {/* Imagen de la carta */}
+                <div style={{
+                  width: '100%',
+                  aspectRatio: '2.5 / 3.5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '10px',
+                  overflow: 'hidden',
+                  borderRadius: '6px'
+                }}>
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
                     onError={(e) => { e.currentTarget.src = '/generic_card.png'; }}
                     style={{
-                      maxHeight: '100%',
                       maxWidth: '100%',
+                      maxHeight: '100%',
                       objectFit: 'contain',
-                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))',
-                      transition: 'transform 0.3s ease'
+                      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))'
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                   />
                 </div>
 
-                {/* Info */}
-                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    {product.expansion || 'Edición Oficial'}
-                  </span>
-                  <h3 
-                    onClick={() => onViewProductDetails(product)}
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      color: '#ffffff',
-                      margin: 0,
-                      lineHeight: 1.3,
-                      cursor: 'pointer',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    {product.name}
-                  </h3>
-                </div>
-
-                {/* Precio y Acciones */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingTop: '10px',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.06)'
-                }}>
-                  <div>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>Precio</span>
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#ffcb05', fontFamily: 'var(--font-heading)' }}>
-                      ${product.price.toLocaleString('es-MX')} <span style={{ fontSize: '11px', fontWeight: 600 }}>MXN</span>
+                {/* Información */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{
+                      fontSize: '8px',
+                      fontWeight: 800,
+                      padding: '2px 5px',
+                      borderRadius: '4px',
+                      backgroundColor: `${gameColor}20`,
+                      color: gameColor,
+                      border: `1px solid ${gameColor}40`,
+                      textTransform: 'uppercase'
+                    }}>
+                      {gameLabel}
+                    </span>
+                    <span style={{ fontSize: '8.5px', color: 'var(--text-secondary)', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>
+                      {product.expansion || 'Carta Suelta'}
                     </span>
                   </div>
+                  <h4 style={{
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: 'white',
+                    margin: '0 0 6px 0',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }} title={product.name}>
+                    {product.name}
+                  </h4>
 
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  {/* Badges de Idioma y Condición */}
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {product.region && (
+                      <span style={{
+                        fontSize: '8.5px',
+                        padding: '1px 4px',
+                        borderRadius: '3px',
+                        backgroundColor: 'rgba(96, 165, 250, 0.12)',
+                        color: '#60a5fa',
+                        fontWeight: 700
+                      }}>
+                        🌐 {product.region.split(' ')[0]}
+                      </span>
+                    )}
+                    {product.cardCondition && (
+                      <span style={{
+                        fontSize: '8.5px',
+                        padding: '1px 4px',
+                        borderRadius: '3px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                        color: '#f59e0b',
+                        fontWeight: 700
+                      }}>
+                        ✨ {product.cardCondition}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Precio e Interacciones */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--secondary)' }}>
+                      ${product.price.toLocaleString('es-MX')} MXN
+                    </span>
+                    
                     <button
-                      onClick={() => onViewProductDetails(product)}
-                      title="Ver Detalles"
-                      className="btn"
-                      style={{
-                        padding: '8px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                        border: '1px solid var(--border-color)',
-                        color: '#ffffff',
-                        borderRadius: '8px'
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddToCart(product);
                       }}
-                    >
-                      <Eye size={15} />
-                    </button>
-                    <button
-                      onClick={() => onAddToCart(product)}
-                      title="Agregar al Carrito"
+                      disabled={product.stock === 0}
                       className="btn btn-primary"
                       style={{
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
+                        padding: '4px 8px',
+                        fontSize: '11px',
+                        borderRadius: '4px',
+                        opacity: product.stock === 0 ? 0.5 : 1,
+                        cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
                       }}
                     >
-                      <ShoppingCart size={15} />
+                      + Agregar
                     </button>
                   </div>
                 </div>
@@ -861,226 +957,258 @@ export default function Home({
         </div>
       </section>
 
-      {/* 2.5 CARRUSEL DE CARTAS SUELTAS */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+      {/* 4. CAJAS SELLADAS & BOOSTER BOXES DESTACADAS */}
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <span style={{ fontSize: '11px', color: 'var(--secondary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Colección de Singles</span>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'white', margin: '4px 0 0 0', fontFamily: 'var(--font-heading)' }}>
-              Cartas Sueltas Destacadas
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '11px',
+              color: '#38bdf8',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              marginBottom: '4px'
+            }}>
+              <Package size={13} /> Stock Oficial de Fábrica
+            </div>
+            <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'white', margin: 0, fontFamily: 'var(--font-heading)' }}>
+              Cajas Selladas & Booster Boxes Más Buscadas
             </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+              Material precintado de fábrica con garantía de autenticidad absoluta PokéVault.
+            </p>
           </div>
-          
-          {/* Botones del Carrusel */}
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
-              onClick={() => scrollCarousel('left')}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid var(--border-color)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 62, 62, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button 
-              onClick={() => scrollCarousel('right')}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                backgroundColor: 'rgba(255,255,255,0.05)',
-                border: '1px solid var(--border-color)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 62, 62, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
+
+          <button
+            onClick={() => onExploreCategory('booster_box')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#60a5fa',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            Ver todas las cajas selladas <ChevronRight size={14} />
+          </button>
         </div>
 
-        {/* Contenedor del Scroll Carrusel */}
-        <div 
-          ref={carouselRef}
-          style={{
-            display: 'flex',
-            gap: '20px',
-            overflowX: 'auto',
-            scrollBehavior: 'smooth',
-            paddingBottom: '16px',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
-          }}
-          className="carousel-scrollbar-hide"
-        >
-          {carouselCards.map((product) => (
-            <div 
-              key={product.id}
-              className="glass"
-              style={{
-                minWidth: '220px',
-                maxWidth: '220px',
-                borderRadius: '12px',
-                padding: '14px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'rgba(22, 27, 38, 0.3)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-6px)';
-                e.currentTarget.style.borderColor = 'rgba(255, 62, 62, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'var(--border-color)';
-              }}
-              onClick={() => onViewProductDetails(product)}
-            >
-              {/* Imagen de la carta */}
-              <div style={{
-                width: '100%',
-                aspectRatio: '2.5 / 3.5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '10px',
-                overflow: 'hidden',
-                borderRadius: '6px'
-              }}>
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  onError={(e) => { e.currentTarget.src = '/generic_card.png'; }}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    objectFit: 'contain',
-                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))'
-                  }}
-                />
-              </div>
+        {/* Grid de Cajas Selladas */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: '24px'
+        }}>
+          {featuredSealedProducts.map(product => {
+            const gameColor = 
+              product.gameType === 'LORCANA' ? '#a855f7' :
+              product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? '#06b6d4' :
+              product.gameType === 'YUGIOH' ? '#ef4444' :
+              product.gameType === 'MAGIC' ? '#f97316' : '#ffcb05';
 
-              {/* Información */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            const gameLabel = 
+              product.gameType === 'LORCANA' ? 'Disney Lorcana' :
+              product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'One Piece' :
+              product.gameType === 'YUGIOH' ? 'Yu-Gi-Oh!' :
+              product.gameType === 'MAGIC' ? 'Magic' : 'Pokémon';
+
+            const categoryLabel = product.category === 'etb' ? '⚔️ Elite Trainer Box' : '📦 Booster Box';
+
+            return (
+              <div
+                key={product.id}
+                className="glass"
+                style={{
+                  borderRadius: '16px',
+                  padding: '18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                  backgroundColor: 'rgba(14, 18, 28, 0.75)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  transition: 'all 0.3s ease',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-6px)';
+                  e.currentTarget.style.borderColor = gameColor;
+                  e.currentTarget.style.boxShadow = `0 16px 36px ${gameColor}20`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                {/* Badges superiores */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{
-                    fontSize: '8px',
+                    fontSize: '10px',
                     fontWeight: 800,
-                    padding: '2px 5px',
-                    borderRadius: '4px',
-                    backgroundColor: product.gameType === 'LORCANA' ? 'rgba(168, 85, 247, 0.2)' :
-                                     product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'rgba(6, 182, 212, 0.2)' :
-                                     product.gameType === 'YUGIOH' ? 'rgba(239, 68, 68, 0.2)' :
-                                     product.gameType === 'MAGIC' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(255, 203, 5, 0.2)',
-                    color: product.gameType === 'LORCANA' ? '#c084fc' :
-                           product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? '#22d3ee' :
-                           product.gameType === 'YUGIOH' ? '#f87171' :
-                           product.gameType === 'MAGIC' ? '#fb923c' : '#ffcb05',
-                    border: `1px solid ${
-                      product.gameType === 'LORCANA' ? 'rgba(168, 85, 247, 0.4)' :
-                      product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'rgba(6, 182, 212, 0.4)' :
-                      product.gameType === 'YUGIOH' ? 'rgba(239, 68, 68, 0.4)' :
-                      product.gameType === 'MAGIC' ? 'rgba(249, 115, 22, 0.4)' : 'rgba(255, 203, 5, 0.4)'
-                    }`,
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: `${gameColor}20`,
+                    color: gameColor,
+                    border: `1px solid ${gameColor}40`,
                     textTransform: 'uppercase'
                   }}>
-                    {product.gameType === 'LORCANA' ? 'Lorcana' :
-                     product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'One Piece' :
-                     product.gameType === 'YUGIOH' ? 'Yu-Gi-Oh!' :
-                     product.gameType === 'MAGIC' ? 'Magic' : 'Pokémon'}
+                    {gameLabel}
                   </span>
-                  <span style={{ fontSize: '8.5px', color: 'var(--text-secondary)', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>
-                    {product.expansion || 'Carta Suelta'}
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.3)'
+                  }}>
+                    {categoryLabel}
                   </span>
                 </div>
-                <h4 style={{
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  color: 'white',
-                  margin: '0 0 6px 0',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }} title={product.name}>
-                  {product.name}
-                </h4>
 
-                {/* Badges de Idioma y Condición */}
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                  {product.region && (
-                    <span style={{
-                      fontSize: '8.5px',
-                      padding: '1px 4px',
-                      borderRadius: '3px',
-                      backgroundColor: 'rgba(96, 165, 250, 0.12)',
-                      color: '#60a5fa',
-                      fontWeight: 700
-                    }}>
-                      🌐 {product.region.split(' ')[0]}
-                    </span>
-                  )}
-                  {product.cardCondition && (
-                    <span style={{
-                      fontSize: '8.5px',
-                      padding: '1px 4px',
-                      borderRadius: '3px',
-                      backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                      color: '#f59e0b',
-                      fontWeight: 700
-                    }}>
-                      ✨ {product.cardCondition}
-                    </span>
-                  )}
-                </div>
-
-                {/* Precio e Interacciones */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--secondary)' }}>
-                    ${product.price.toLocaleString('es-MX')} MXN
-                  </span>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddToCart(product);
-                    }}
-                    disabled={product.stock === 0}
-                    className="btn btn-primary"
+                {/* Imagen del Producto Sellado */}
+                <div 
+                  onClick={() => onViewProductDetails(product)}
+                  style={{
+                    height: '200px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    padding: '8px 0',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '10px',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    onError={(e) => { e.currentTarget.src = product.category === 'etb' ? '/official_etb.png' : '/official_booster_box.png'; }}
                     style={{
-                      padding: '4px 8px',
-                      fontSize: '11px',
-                      borderRadius: '4px',
-                      opacity: product.stock === 0 ? 0.5 : 1,
-                      cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
+                      maxHeight: '90%',
+                      maxWidth: '90%',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))',
+                      transition: 'transform 0.4s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                  />
+                </div>
+
+                {/* Info */}
+                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {product.expansion || 'Edición Oficial Sellada'}
+                  </span>
+                  <h3 
+                    onClick={() => onViewProductDetails(product)}
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      color: 'white',
+                      margin: 0,
+                      lineHeight: 1.3,
+                      cursor: 'pointer',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      height: '38px'
                     }}
                   >
-                    + Agregar
-                  </button>
+                    {product.name}
+                  </h3>
+
+                  {product.description && (
+                    <p style={{
+                      fontSize: '12px',
+                      color: 'var(--text-secondary)',
+                      margin: 0,
+                      lineHeight: 1.4,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {product.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Disponibilidad y Precio */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingTop: '12px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+                }}>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>
+                      {product.stock > 0 ? (
+                        <span style={{ color: product.stock <= 3 ? '#f59e0b' : '#34d399', fontWeight: 700 }}>
+                          {product.stock <= 3 ? `⚡ ¡Solo quedan ${product.stock}!` : `✓ Stock: ${product.stock} uds`}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#ef4444', fontWeight: 700 }}>Agotado</span>
+                      )}
+                    </span>
+                    <span style={{ fontSize: '19px', fontWeight: 800, color: '#ffcb05', fontFamily: 'var(--font-heading)' }}>
+                      ${product.price.toLocaleString('es-MX')} <span style={{ fontSize: '11px', fontWeight: 600 }}>MXN</span>
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => onViewProductDetails(product)}
+                      title="Ver Detalles"
+                      className="btn"
+                      style={{
+                        padding: '9px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid var(--border-color)',
+                        color: '#ffffff',
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button
+                      onClick={() => onAddToCart(product)}
+                      disabled={product.stock === 0}
+                      title={product.stock === 0 ? 'Sin stock' : 'Agregar al Carrito'}
+                      className="btn btn-primary"
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        opacity: product.stock === 0 ? 0.5 : 1,
+                        cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      <ShoppingCart size={15} /> Añadir
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
