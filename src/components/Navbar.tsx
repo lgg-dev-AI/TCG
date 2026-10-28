@@ -206,30 +206,6 @@ export default function Navbar({
                 </li>
               );
             })}
-            {/* TCG Selector */}
-            <li style={{ display: 'flex', alignItems: 'center', marginLeft: '16px' }}>
-              <select
-                value={activeGame === 'ONEPIECE' ? 'ONE_PIECE' : activeGame}
-                onChange={(e) => onGameChange(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: 'white',
-                  border: '1px solid var(--border-color)',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                <option value="POKEMON">Pokémon TCG</option>
-                <option value="MAGIC">Magic: The Gathering</option>
-                <option value="YUGIOH">Yu-Gi-Oh!</option>
-                <option value="ONE_PIECE">One Piece</option>
-                <option value="DRAGON_BALL">Dragon Ball</option>
-              </select>
-            </li>
           </ul>
         </nav>
 
@@ -465,37 +441,7 @@ export default function Navbar({
             {/* Separador */}
             <li style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
 
-            {/* Selector de Juego Móvil */}
-            <li style={{ padding: '0 16px' }}>
-              <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>Juego Activo:</label>
-              <select
-                value={activeGame === 'ONEPIECE' ? 'ONE_PIECE' : activeGame}
-                onChange={(e) => {
-                  onGameChange(e.target.value);
-                  setMobileMenuOpen(false);
-                }}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: 'white',
-                  border: '1px solid var(--border-color)',
-                  padding: '10px',
-                  borderRadius: '6px',
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: '15px',
-                  cursor: 'pointer',
-                  outline: 'none'
-                }}
-              >
-                <option value="POKEMON">Pokémon TCG</option>
-                <option value="MAGIC">Magic: The Gathering</option>
-                <option value="YUGIOH">Yu-Gi-Oh!</option>
-                <option value="ONE_PIECE">One Piece</option>
-                <option value="DRAGON_BALL">Dragon Ball</option>
-              </select>
-            </li>
-            {/* Separador */}
-            <li style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+
 
             {/* Menú de cuenta en celular */}
             <li>
