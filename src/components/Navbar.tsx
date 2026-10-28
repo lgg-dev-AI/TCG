@@ -15,7 +15,11 @@ interface NavbarProps {
   onLoginClick: () => void;
   onLogout: () => void;
   activeGame: string;
-  onGameChange: (game: string) => void;
+  catalogCategory?: string;
+  selectedPlatform?: string;
+  selectedAccessory?: string;
+  onNavigate?: (path: string, options?: { game?: string; category?: string; platform?: string; accessory?: string }) => void;
+  onGameChange?: (game: string) => void;
   categories?: CategoryItem[];
   onSelectCategory?: (category: string) => void;
   onSelectDeals?: () => void;
@@ -34,8 +38,12 @@ export default function Navbar({
   onLoginClick,
   onLogout,
   activeGame,
+  catalogCategory,
+  selectedPlatform,
+  selectedAccessory,
+  onNavigate,
   onGameChange,
-  categories,
+  categories: _categories,
   onSelectCategory,
   onSelectDeals,
   onConfigureBar,
@@ -349,13 +357,17 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Barra de Contenido / Juegos Estilo TCGplayer */}
+      {/* Barra de Contenido Compacta con 3 Menús Desplegables */}
       <ContentBar
         activeGame={activeGame}
-        onGameChange={onGameChange}
-        onSelectCategory={onSelectCategory}
-        onSelectDeals={onSelectDeals}
-        customCategories={categories}
+        catalogCategory={catalogCategory}
+        selectedPlatform={selectedPlatform}
+        selectedAccessory={selectedAccessory}
+        onNavigate={onNavigate || ((path, opts) => {
+          if (opts?.game) onGameChange?.(opts.game);
+          if (opts?.category) onSelectCategory?.(opts.category);
+          if (path === '/ofertas') onSelectDeals?.();
+        })}
         isAdmin={isAdmin}
         onConfigureBar={onConfigureBar}
       />

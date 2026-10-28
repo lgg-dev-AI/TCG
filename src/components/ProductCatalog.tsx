@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Filter, HelpCircle, TrendingUp, 
-  Sparkles, Gamepad2, ShieldCheck, RotateCcw
+  Sparkles, Gamepad2, ShieldCheck, RotateCcw, ChevronRight
 } from 'lucide-react';
 import ProductItem from './ProductItem';
 import type { Product } from './ProductItem';
@@ -18,6 +18,9 @@ interface ProductCatalogProps {
   onToggleFavorite: (productId: string, product?: Product) => void;
   initialCategory?: string;
   activeGame: string;
+  initialPlatform?: string;
+  initialAccessory?: string;
+  onNavigate?: (path: string, options?: { game?: string; category?: string; platform?: string; accessory?: string }) => void;
 }
 
 export const MOCK_PRODUCTS = INITIAL_PRODUCTS;
@@ -31,6 +34,9 @@ export default function ProductCatalog({
   onToggleFavorite,
   initialCategory,
   activeGame,
+  initialPlatform,
+  initialAccessory,
+  onNavigate,
 }: ProductCatalogProps) {
   // Estados de navegación por Pilares: 'tcg' | 'videogames' | 'accessories'
   const [mainPillar, setMainPillar] = useState<'tcg' | 'videogames' | 'accessories'>('tcg');
@@ -92,6 +98,24 @@ export default function ProductCatalog({
       }
     }
   }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialPlatform) {
+      setSelectedPlatform(initialPlatform);
+      if (initialPlatform !== 'all') {
+        setMainPillar('videogames');
+      }
+    }
+  }, [initialPlatform]);
+
+  useEffect(() => {
+    if (initialAccessory) {
+      setSelectedAccessoryType(initialAccessory);
+      if (initialAccessory !== 'all') {
+        setMainPillar('accessories');
+      }
+    }
+  }, [initialAccessory]);
 
   // Combinar productos locales mockeados con productos de la API
   const getCombinedProducts = (): Product[] => {
@@ -304,6 +328,47 @@ export default function ProductCatalog({
 
   return (
     <div style={{ paddingBottom: '60px' }}>
+      {/* Migas de Pan (Breadcrumbs) para Vistas Dedicadas */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '12px',
+        color: 'var(--text-secondary)',
+        marginBottom: '16px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => onNavigate?.('/')}
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, fontSize: '12px', fontWeight: 600 }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+        >
+          Inicio
+        </button>
+        <ChevronRight size={12} color="rgba(255,255,255,0.3)" />
+        <button
+          onClick={() => {
+            if (mainPillar === 'videogames') onNavigate?.('/videojuegos', { category: 'videogame' });
+            else if (mainPillar === 'accessories') onNavigate?.('/accesorios', { category: 'accessory' });
+            else onNavigate?.('/tcg', { category: 'all', game: 'ALL' });
+          }}
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, fontSize: '12px', fontWeight: 600 }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+        >
+          {mainPillar === 'videogames' ? 'Videojuegos & Consolas' : mainPillar === 'accessories' ? 'Accesorios & Protección' : 'Cartas & TCG'}
+        </button>
+        <ChevronRight size={12} color="rgba(255,255,255,0.3)" />
+        <span style={{ color: '#ffcb05', fontWeight: 700 }}>
+          {mainPillar === 'videogames'
+            ? selectedPlatform !== 'all' ? selectedPlatform.toUpperCase() : 'Todos los Videojuegos'
+            : mainPillar === 'accessories'
+              ? selectedAccessoryType !== 'all' ? selectedAccessoryType.toUpperCase() : 'Todos los Accesorios'
+              : activeGame && activeGame !== 'ALL' ? activeGame : 'Todo TCG'}
+        </span>
+      </div>
+
       {/* ============================================================== */}
       {/* 3 GRANDES PILARES: TCG vs VIDEOJUEGOS vs ACCESORIOS */}
       {/* ============================================================== */}

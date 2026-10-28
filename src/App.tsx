@@ -110,12 +110,108 @@ const getStorage = <T,>(key: string, defaultValue: T): T => {
   return defaultValue;
 };
 
+interface ParsedRoute {
+  section: string;
+  category: string;
+  game: string;
+  platform?: string;
+  accessory?: string;
+}
+
+const parseRouteFromPath = (pathname: string): ParsedRoute => {
+  const clean = (pathname || '').toLowerCase().replace(/^\/+|\/+$/g, '');
+  
+  if (!clean || clean === 'home' || clean === 'inicio') {
+    return { section: 'home', category: 'all', game: 'POKEMON' };
+  }
+  if (clean === 'tienda' || clean === 'catalogo') {
+    return { section: 'catalog', category: 'all', game: 'POKEMON' };
+  }
+  if (clean === 'compramos-cartas' || clean === 'buyback') {
+    return { section: 'buyback', category: 'all', game: 'POKEMON' };
+  }
+  if (clean === 'admin') {
+    return { section: 'admin', category: 'all', game: 'POKEMON' };
+  }
+  if (clean === 'cuenta' || clean === 'account') {
+    return { section: 'account', category: 'all', game: 'POKEMON' };
+  }
+  if (clean === 'checkout') {
+    return { section: 'checkout', category: 'all', game: 'POKEMON' };
+  }
+
+  // TCG Games
+  if (clean === 'pokemon') return { section: 'catalog', category: 'all', game: 'POKEMON' };
+  if (clean === 'magic') return { section: 'catalog', category: 'all', game: 'MAGIC' };
+  if (clean === 'yugioh' || clean === 'yu-gi-oh') return { section: 'catalog', category: 'all', game: 'YUGIOH' };
+  if (clean === 'onepiece' || clean === 'one-piece') return { section: 'catalog', category: 'all', game: 'ONE_PIECE' };
+  if (clean === 'lorcana' || clean === 'disney-lorcana') return { section: 'catalog', category: 'all', game: 'LORCANA' };
+  if (clean === 'dragonball' || clean === 'dragon-ball') return { section: 'catalog', category: 'all', game: 'DRAGON_BALL' };
+  if (clean === 'digimon') return { section: 'catalog', category: 'all', game: 'DIGIMON' };
+  if (clean === 'tcg' || clean === 'cartas') return { section: 'catalog', category: 'all', game: 'ALL' };
+
+  // Videojuegos y consolas
+  if (clean === 'videojuegos' || clean === 'consolas') return { section: 'catalog', category: 'videogame', game: 'ALL', platform: 'all' };
+  if (clean === 'switch' || clean === 'nintendo-switch') return { section: 'catalog', category: 'videogame', game: 'ALL', platform: 'switch' };
+  if (clean === 'playstation' || clean === 'ps5' || clean === 'ps4') return { section: 'catalog', category: 'videogame', game: 'ALL', platform: 'playstation' };
+  if (clean === 'xbox' || clean === 'xbox-series') return { section: 'catalog', category: 'videogame', game: 'ALL', platform: 'xbox' };
+  if (clean === 'retro' || clean === 'retro-gaming') return { section: 'catalog', category: 'videogame', game: 'ALL', platform: 'retro' };
+
+  // Accesorios y Protección
+  if (clean === 'accesorios' || clean === 'proteccion') return { section: 'catalog', category: 'accessory', game: 'ALL', accessory: 'all' };
+  if (clean === 'micas' || clean === 'sleeves') return { section: 'catalog', category: 'accessory', game: 'ALL', accessory: 'sleeves' };
+  if (clean === 'carpetas' || clean === 'binders') return { section: 'catalog', category: 'accessory', game: 'ALL', accessory: 'binders' };
+  if (clean === 'toploaders' || clean === 'cajas-acrilicas') return { section: 'catalog', category: 'accessory', game: 'ALL', accessory: 'toploaders' };
+  if (clean === 'playmats' || clean === 'tapetes') return { section: 'catalog', category: 'accessory', game: 'ALL', accessory: 'playmats' };
+  if (clean === 'deckboxes' || clean === 'dados') return { section: 'catalog', category: 'accessory', game: 'ALL', accessory: 'deckbox' };
+
+  // Ofertas
+  if (clean === 'ofertas' || clean === 'deals') return { section: 'catalog', category: 'deals', game: 'ALL' };
+
+  return { section: 'home', category: 'all', game: 'POKEMON' };
+};
+
 export default function App() {
-  // Estados de navegación
-  const [currentSection, setCurrentSection] = useState<string>('home'); // 'home' | 'catalog' | 'grading' | 'buyback' | 'simulator' | 'checkout' | 'account' | 'admin'
-  const [catalogCategory, setCatalogCategory] = useState<string>('all');
+  const initialRoute = parseRouteFromPath(typeof window !== 'undefined' ? window.location.pathname : '/');
+  // Estados de navegación sincronizados con URL
+  const [currentSection, setCurrentSection] = useState<string>(initialRoute.section);
+  const [catalogCategory, setCatalogCategory] = useState<string>(initialRoute.category);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeGame, setActiveGame] = useState<string>('POKEMON'); // 'POKEMON' | 'MAGIC' | 'YUGIOH' | 'ONE_PIECE'
+  const [activeGame, setActiveGame] = useState<string>(initialRoute.game || 'POKEMON');
+  const [selectedPlatform, setSelectedPlatform] = useState<string>(initialRoute.platform || 'all');
+  const [selectedAccessory, setSelectedAccessory] = useState<string>(initialRoute.accessory || 'all');
+
+  const navigateTo = (path: string, options?: { game?: string; category?: string; platform?: string; accessory?: string }) => {
+    const formattedPath = path.startsWith('/') ? path : `/${path}`;
+    if (window.location.pathname !== formattedPath) {
+      window.history.pushState(null, '', formattedPath);
+    }
+    const route = parseRouteFromPath(formattedPath);
+    setCurrentSection(route.section);
+    setCatalogCategory(options?.category !== undefined ? options.category : route.category);
+    if (options?.game) {
+      setActiveGame(options.game);
+    } else if (route.game) {
+      setActiveGame(route.game);
+    }
+    setSelectedPlatform(options?.platform || route.platform || 'all');
+    setSelectedAccessory(options?.accessory || route.accessory || 'all');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const route = parseRouteFromPath(window.location.pathname);
+      setCurrentSection(route.section);
+      setCatalogCategory(route.category);
+      if (route.game) setActiveGame(route.game);
+      setSelectedPlatform(route.platform || 'all');
+      setSelectedAccessory(route.accessory || 'all');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Estados del carrito
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -506,12 +602,13 @@ export default function App() {
         cartCount={cartCount}
         onCartToggle={() => setCartOpen(!cartOpen)}
         onSectionChange={(section) => {
-          setCurrentSection(section);
-          setSearchQuery(''); // Limpiar búsquedas al cambiar de sección
-          if (section === 'catalog') {
-            setCatalogCategory('all');
-          }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setSearchQuery('');
+          if (section === 'home') navigateTo('/');
+          else if (section === 'catalog') navigateTo('/tienda');
+          else if (section === 'buyback') navigateTo('/compramos-cartas');
+          else if (section === 'admin') navigateTo('/admin');
+          else if (section === 'account') navigateTo('/cuenta');
+          else if (section === 'checkout') navigateTo('/checkout');
         }}
         currentSection={currentSection}
         searchQuery={searchQuery}
@@ -521,25 +618,22 @@ export default function App() {
         onLoginClick={() => setLoginOpen(true)}
         onLogout={handleLogout}
         activeGame={activeGame}
+        catalogCategory={catalogCategory}
+        selectedPlatform={selectedPlatform}
+        selectedAccessory={selectedAccessory}
+        onNavigate={navigateTo}
         onGameChange={(game) => {
-          setActiveGame(game);
-          setCurrentSection('catalog');
-          setCatalogCategory('all');
+          navigateTo(`/${game.toLowerCase().replace('_', '')}`, { game });
         }}
         categories={categories}
         onSelectCategory={(cat) => {
-          setCatalogCategory(cat);
-          setCurrentSection('catalog');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          navigateTo(cat === 'videogame' ? '/videojuegos' : cat === 'accessory' ? '/accesorios' : '/tienda', { category: cat });
         }}
         onSelectDeals={() => {
-          setCatalogCategory('deals');
-          setCurrentSection('catalog');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          navigateTo('/ofertas', { category: 'deals' });
         }}
         onConfigureBar={() => {
-          setCurrentSection('admin');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          navigateTo('/admin');
         }}
       />
 
@@ -550,24 +644,17 @@ export default function App() {
         {currentSection === 'home' && (
           <Home
             onExploreClick={() => {
-              setCatalogCategory('all');
-              setCurrentSection('catalog');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              navigateTo('/tienda');
             }}
             onExploreCategory={(cat) => {
-              setCatalogCategory(cat);
-              setCurrentSection('catalog');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              navigateTo(cat === 'videogame' ? '/videojuegos' : cat === 'accessory' ? '/accesorios' : '/tienda', { category: cat });
             }}
             onViewProductDetails={setSelectedProduct}
             onAddToCart={handleAddToCart}
             inventory={inventory.filter(p => p.gameType === activeGame || (activeGame.includes('ONE') && (p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE')) || !p.gameType || (p.gameType === 'POKEMON' && activeGame === 'POKEMON'))}
             activeGame={activeGame}
             onGameChange={(game) => {
-              setActiveGame(game);
-              setCatalogCategory('all');
-              setCurrentSection('catalog');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              navigateTo(`/${game.toLowerCase().replace('_', '')}`, { game });
             }}
           />
         )}
@@ -607,6 +694,9 @@ export default function App() {
               onToggleFavorite={handleToggleFavorite}
               initialCategory={catalogCategory}
               activeGame={activeGame}
+              initialPlatform={selectedPlatform}
+              initialAccessory={selectedAccessory}
+              onNavigate={navigateTo}
             />
           </div>
         )}
