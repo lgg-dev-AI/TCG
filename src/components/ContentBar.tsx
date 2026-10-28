@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Sparkles, Flame, Swords, Ship, Wand2, Gamepad2, ShieldCheck, 
-  Tag, Layers, Compass
+  Tag, Layers, Compass, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import type { CategoryItem } from '../api';
 
@@ -48,6 +48,10 @@ export default function ContentBar({
   isAdmin,
   onConfigureBar
 }: ContentBarProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
   // Combinar predeterminados con categorías dinámicas del admin si existen
   const items: ContentBarItem[] = React.useMemo(() => {
     if (!customCategories || customCategories.length === 0) {
@@ -69,6 +73,34 @@ export default function ContentBar({
 
     return dynamicItems.length > 0 ? dynamicItems : DEFAULT_CONTENT_BAR_ITEMS;
   }, [customCategories]);
+
+  const updateScrollState = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    updateScrollState();
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', updateScrollState);
+      window.addEventListener('resize', updateScrollState);
+      return () => {
+        el.removeEventListener('scroll', updateScrollState);
+        window.removeEventListener('resize', updateScrollState);
+      };
+    }
+  }, [items]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const offset = direction === 'left' ? -280 : 280;
+      scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
 
   const renderIcon = (iconName?: string, color = '#ffcb05') => {
     switch (iconName) {
@@ -100,33 +132,67 @@ export default function ContentBar({
 
   return (
     <div style={{
-      backgroundColor: '#0d111a',
+      backgroundColor: '#0a0d14',
       borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
       position: 'relative',
       zIndex: 40
     }}>
       <div style={{
         maxWidth: '1360px',
         margin: '0 auto',
-        padding: '0 16px',
+        padding: '0 12px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        overflowX: 'auto',
-        scrollbarWidth: 'none',
-        gap: '6px'
-      }} className="content-bar-scroll">
-        
-        {/* Strip de Navegación Rápida Estilo TCGplayer */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '6px 0',
-          whiteSpace: 'nowrap',
-          flex: 1
-        }}>
+        position: 'relative'
+      }}>
+        {/* Botón Scroll Izquierda */}
+        {canScrollLeft && (
+          <button
+            onClick={() => handleScroll('left')}
+            aria-label="Desplazar a la izquierda"
+            style={{
+              position: 'absolute',
+              left: '6px',
+              zIndex: 50,
+              backgroundColor: 'rgba(13, 17, 26, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '50%',
+              width: '26px',
+              height: '26px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+            }}
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+
+        {/* Strip de Navegación Rápida Scrolleable */}
+        <div
+          ref={scrollRef}
+          onWheel={(e) => {
+            if (e.deltaY !== 0 && scrollRef.current) {
+              scrollRef.current.scrollLeft += e.deltaY;
+            }
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 4px',
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            whiteSpace: 'nowrap',
+            flex: 1,
+            scrollBehavior: 'smooth'
+          }}
+          className="content-bar-scroll"
+        >
           {items.map(item => {
             const isCurrent = 
               (item.gameType && item.gameType === activeGame) ||
@@ -188,6 +254,32 @@ export default function ContentBar({
             );
           })}
         </div>
+
+        {/* Botón Scroll Derecha */}
+        {canScrollRight && (
+          <button
+            onClick={() => handleScroll('right')}
+            aria-label="Desplazar a la derecha"
+            style={{
+              position: 'absolute',
+              right: (isAdmin && onConfigureBar) ? '135px' : '6px',
+              zIndex: 50,
+              backgroundColor: 'rgba(13, 17, 26, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '50%',
+              width: '26px',
+              height: '26px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+            }}
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
 
         {/* Acceso para Admin a Configurar Barra */}
         {isAdmin && onConfigureBar && (

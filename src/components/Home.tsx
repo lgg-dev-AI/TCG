@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, Truck, CreditCard, ChevronRight, ShoppingCart, Eye, Award, 
-  Flame, ChevronLeft, Swords, Ship, Wand2, Gamepad2, ShieldCheck, Tag 
+  Flame, ChevronLeft
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 
@@ -21,8 +21,7 @@ export default function Home({
   onViewProductDetails,
   onAddToCart,
   inventory,
-  activeGame,
-  onGameChange
+  activeGame
 }: HomeProps) {
   // Encontrar el producto recomendado en el catálogo (ETB 151 o el primero disponible)
   const recommendedProduct = inventory.find(p => p.id === 'sealed_2') || inventory[0] || {
@@ -36,6 +35,15 @@ export default function Home({
     expansion: 'Pokémon 151',
     isPromo: true
   };
+
+  // Cartas más cotizadas y destacadas para el showcase de Home (Opción B)
+  const featuredShowcaseCards = React.useMemo(() => {
+    const singles = inventory.filter(p => p.category === 'single');
+    if (singles.length >= 4) {
+      return [...singles].sort((a, b) => b.price - a.price).slice(0, 8);
+    }
+    return inventory.slice(0, 8);
+  }, [inventory]);
 
   // Referencia para el efecto 3D Holográfico
   const cardRef = useRef<HTMLDivElement>(null);
@@ -336,15 +344,15 @@ export default function Home({
         </div>
       </section>
 
-      {/* 2. EXPLORA POR TCG & CATEGORÍA (TCGplayer Game Showcase) */}
+      {/* 2. CARTAS MÁS COTIZADAS & NOVEDADES (Opción B: Showcase Real de Productos) */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <span style={{ fontSize: '11px', color: '#ffcb05', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-              Directorio de Coleccionismo
+              Colección Exclusiva Multi-TCG
             </span>
             <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'white', margin: '4px 0 0 0', fontFamily: 'var(--font-heading)' }}>
-              Explora por TCG & Categoría
+              Cartas Más Cotizadas & Novedades
             </h2>
           </div>
           <button
@@ -365,102 +373,177 @@ export default function Home({
           </button>
         </div>
 
-        {/* Grid de Juegos y Categorías */}
+        {/* Grid de Productos Reales Destacados */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '16px'
+          gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+          gap: '20px'
         }}>
-          {[
-            { id: 'pokemon', name: 'Pokémon TCG', type: 'POKEMON', icon: Sparkles, color: '#ffcb05', desc: 'Singles, Booster Boxes, ETBs 151 y Prismatic' },
-            { id: 'magic', name: 'Magic: The Gathering', type: 'MAGIC', icon: Flame, color: '#f97316', desc: 'Commander, Modern Horizons, Collector Boosters' },
-            { id: 'yugioh', name: 'Yu-Gi-Oh!', type: 'YUGIOH', icon: Swords, color: '#ef4444', desc: 'Quarter Century Rares, Core Sets, Barajas' },
-            { id: 'onepiece', name: 'One Piece Card Game', type: 'ONE_PIECE', icon: Ship, color: '#06b6d4', desc: 'Romance Dawn, Wings of Captain, OP-05', badge: 'POPULAR' },
-            { id: 'lorcana', name: 'Disney Lorcana', type: 'LORCANA', icon: Wand2, color: '#a855f7', desc: 'The First Chapter, Inklands, Illumineer Troves' },
-            { id: 'videogames', name: 'Videojuegos & Consolas', category: 'videogame', icon: Gamepad2, color: '#10b981', desc: 'Nintendo Switch, PS5, Xbox Series & Retro' },
-            { id: 'accessories', name: 'Accesorios & Protección', category: 'accessory', icon: ShieldCheck, color: '#6366f1', desc: 'Sleeves Dragon Shield, Toploaders, Carpetas' },
-            { id: 'deals', name: 'Liquidaciones & Ofertas', category: 'deals', icon: Tag, color: '#ec4899', desc: 'Garantía de precio por debajo de mercado', badge: 'OFERTAS' }
-          ].map(hub => {
-            const Icon = hub.icon;
-            const isCurrent = (hub.type && hub.type === activeGame) || (hub.id === 'pokemon' && activeGame === 'POKEMON');
+          {featuredShowcaseCards.map(product => {
+            const gameColor = 
+              product.gameType === 'ONE_PIECE' ? '#06b6d4' :
+              product.gameType === 'YUGIOH' ? '#ef4444' :
+              product.gameType === 'MAGIC' ? '#f97316' : '#ffcb05';
+
+            const gameLabel = 
+              product.gameType === 'ONE_PIECE' ? 'One Piece' :
+              product.gameType === 'YUGIOH' ? 'Yu-Gi-Oh!' :
+              product.gameType === 'MAGIC' ? 'Magic' : 'Pokémon';
+
             return (
               <div
-                key={hub.id}
-                onClick={() => {
-                  if (hub.type) {
-                    onGameChange?.(hub.type);
-                    onExploreClick();
-                  } else if (hub.category) {
-                    onExploreCategory(hub.category);
-                  }
-                }}
+                key={product.id}
                 className="glass"
                 style={{
-                  padding: '20px',
-                  borderRadius: '14px',
-                  border: isCurrent ? `1.5px solid ${hub.color}` : '1px solid rgba(255, 255, 255, 0.08)',
-                  backgroundColor: isCurrent ? 'rgba(255, 255, 255, 0.06)' : 'rgba(18, 22, 34, 0.6)',
-                  cursor: 'pointer',
+                  borderRadius: '16px',
+                  padding: '16px',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '12px',
+                  backgroundColor: 'rgba(14, 18, 28, 0.75)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  transition: 'all 0.25s ease',
                   position: 'relative',
-                  overflow: 'hidden',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isCurrent ? `0 8px 24px ${hub.color}25` : 'none'
+                  overflow: 'hidden'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.borderColor = hub.color;
-                  e.currentTarget.style.boxShadow = `0 10px 28px ${hub.color}30`;
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.borderColor = gameColor;
+                  e.currentTarget.style.boxShadow = `0 12px 30px ${gameColor}25`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = isCurrent ? hub.color : 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.boxShadow = isCurrent ? `0 8px 24px ${hub.color}25` : 'none';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
+                {/* Badges superiores */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '10px',
-                    backgroundColor: `${hub.color}18`,
-                    border: `1.5px solid ${hub.color}50`,
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    backgroundColor: `${gameColor}20`,
+                    color: gameColor,
+                    border: `1px solid ${gameColor}40`,
+                    textTransform: 'uppercase'
+                  }}>
+                    {gameLabel}
+                  </span>
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    color: '#34d399',
+                    border: '1px solid rgba(16, 185, 129, 0.3)'
+                  }}>
+                    {product.cardCondition || 'NM'}
+                  </span>
+                </div>
+
+                {/* Imagen del Producto */}
+                <div 
+                  onClick={() => onViewProductDetails(product)}
+                  style={{
+                    height: '210px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: hub.color
-                  }}>
-                    <Icon size={20} />
-                  </div>
-                  {hub.badge && (
-                    <span style={{
-                      fontSize: '9.5px',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      backgroundColor: `${hub.color}25`,
-                      color: hub.color,
-                      fontWeight: 800,
-                      letterSpacing: '0.05em'
-                    }}>
-                      {hub.badge}
-                    </span>
-                  )}
+                    cursor: 'pointer',
+                    position: 'relative',
+                    padding: '8px 0'
+                  }}
+                >
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    onError={(e) => { e.currentTarget.src = '/generic_card.png'; }}
+                    style={{
+                      maxHeight: '100%',
+                      maxWidth: '100%',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))',
+                      transition: 'transform 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                  />
                 </div>
 
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', margin: '0 0 4px 0', fontFamily: 'var(--font-heading)' }}>
-                    {hub.name}
+                {/* Info */}
+                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    {product.expansion || 'Edición Oficial'}
+                  </span>
+                  <h3 
+                    onClick={() => onViewProductDetails(product)}
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      margin: 0,
+                      lineHeight: 1.3,
+                      cursor: 'pointer',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {product.name}
                   </h3>
-                  <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                    {hub.desc}
-                  </p>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: 700, color: hub.color, marginTop: 'auto' }}>
-                  <span>Explorar</span>
-                  <ChevronRight size={13} />
+                {/* Precio y Acciones */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingTop: '10px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+                }}>
+                  <div>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block' }}>Precio</span>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: '#ffcb05', fontFamily: 'var(--font-heading)' }}>
+                      ${product.price.toLocaleString('es-MX')} <span style={{ fontSize: '11px', fontWeight: 600 }}>MXN</span>
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => onViewProductDetails(product)}
+                      title="Ver Detalles"
+                      className="btn"
+                      style={{
+                        padding: '8px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid var(--border-color)',
+                        color: '#ffffff',
+                        borderRadius: '8px'
+                      }}
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button
+                      onClick={() => onAddToCart(product)}
+                      title="Agregar al Carrito"
+                      className="btn btn-primary"
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <ShoppingCart size={15} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
