@@ -61,7 +61,7 @@ export default function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
+    <header className="sticky top-0 z-50 w-full" style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: '#0a0d14', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)' }}>
       {/* Barra de Anuncios */}
       <div style={{
         background: 'linear-gradient(90deg, #ff3e3e, #b01a1a)',
@@ -77,9 +77,10 @@ export default function Navbar({
         🔥 Envíos gratis a todo México en compras mayores a $1,499 MXN | Preventas Disponibles 🔥
       </div>
 
-      {/* Menú Principal Glassmorphism */}
-      <div className="glass" style={{
-        padding: '16px 24px',
+      {/* Menú Principal Opaque Premium */}
+      <div style={{
+        backgroundColor: '#0d111a',
+        padding: '14px 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -385,7 +386,8 @@ export default function Navbar({
 
       {/* Menú Desplegable Móvil */}
       {mobileMenuOpen && (
-        <div className="glass" style={{
+        <div style={{
+          backgroundColor: '#0d111a',
           position: 'absolute',
           top: '100%',
           left: 0,
@@ -395,7 +397,8 @@ export default function Navbar({
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          zIndex: 99
+          zIndex: 99,
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)'
         }}>
           {currentSection === 'catalog' && (
             <div style={{ position: 'relative', width: '100%' }}>
