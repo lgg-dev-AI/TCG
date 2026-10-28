@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { 
   X, ShoppingCart, ZoomIn, ShieldCheck, HelpCircle, 
-  TrendingUp, FileText, Award, Plus, Minus, PackageCheck
+  TrendingUp, FileText, Award, Plus, Minus, PackageCheck, Truck
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import MarketPriceHistory from './MarketPriceHistory';
@@ -367,17 +367,20 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
           </div>
 
           {/* ========================================================= */}
+          {/* ========================================================= */}
           {/* COLUMNA 2 (EN MEDIO): Información de la Tarjeta & Compra  */}
           {/* ========================================================= */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',
+            gap: '14px',
             borderRight: '1px solid rgba(255, 255, 255, 0.08)',
             borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
             padding: '0 20px',
-            height: '100%'
+            height: '100%',
+            overflowY: 'auto'
           }} className="card-modal-center-col">
+            {/* Cabecera de la Carta: Badges & Título */}
             <div>
               {/* Badges de Categoría, 1ª Edición, Idioma */}
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -444,7 +447,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                 fontWeight: 800,
                 lineHeight: 1.25,
                 color: '#ffffff',
-                margin: '0 0 10px 0',
+                margin: '0 0 8px 0',
                 fontFamily: 'var(--font-heading)'
               }}>
                 {product.name}
@@ -454,11 +457,11 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '10px',
+                gap: '8px 12px',
                 fontSize: '11.5px',
                 color: 'var(--text-secondary)',
-                marginBottom: '14px',
-                padding: '8px 10px',
+                marginBottom: '10px',
+                padding: '8px 12px',
                 backgroundColor: 'rgba(255, 255, 255, 0.03)',
                 borderRadius: '8px',
                 border: '1px solid rgba(255, 255, 255, 0.05)'
@@ -473,32 +476,31 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               <p style={{
                 fontSize: '12.5px',
                 color: 'var(--text-secondary)',
-                lineHeight: 1.55,
-                marginBottom: '16px'
+                lineHeight: 1.5,
+                margin: 0
               }}>
                 {product.description || 'Carta y artículo original de colección verificado y en resguardo.'}
               </p>
             </div>
 
-            {/* BLOQUE DE PRECIO POKÉVAULT & BOTÓN DE COMPRA */}
+            {/* BLOQUE DE PRECIO POKÉVAULT & BOTÓN DE COMPRA (Directamente bajo la descripción) */}
             <div style={{
               backgroundColor: 'rgba(0, 0, 0, 0.45)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.09)',
               borderRadius: '12px',
-              padding: '16px',
-              marginTop: '12px'
+              padding: '14px 16px'
             }}>
               <div>
-                <span style={{ display: 'block', fontSize: '10.5px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>
+                <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
                   Precio PokéVault:
                 </span>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '26px', fontWeight: 900, color: '#ffcb05', lineHeight: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '2px' }}>
+                  <span style={{ fontSize: '25px', fontWeight: 900, color: '#ffcb05', lineHeight: 1.1 }}>
                     ${product.price.toLocaleString('es-MX')} MXN
                   </span>
                   {discountPercent > 0 && (
                     <span style={{
-                      fontSize: '10.5px',
+                      fontSize: '10px',
                       padding: '2px 6px',
                       borderRadius: '4px',
                       backgroundColor: 'rgba(16, 185, 129, 0.2)',
@@ -581,17 +583,75 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                 </button>
               </div>
 
-              {/* Mensaje de envío seguro para coleccionistas */}
+              {/* Stock Físico Rápido */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 fontSize: '10px',
-                color: 'var(--text-secondary)',
-                marginTop: '10px'
+                color: product.stock > 0 ? '#34d399' : '#f87171',
+                marginTop: '10px',
+                fontWeight: 600
               }}>
-                <PackageCheck size={13} color="#ffcb05" />
-                <span>Envío protegido en mica suave + toploader rígido.</span>
+                <span style={{
+                  display: 'inline-block',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: product.stock > 0 ? '#10b981' : '#ef4444'
+                }} />
+                <span>{product.stock > 0 ? `Stock físico listo para despacho: ${product.stock} pza(s)` : 'Agotado actualmente en inventario'}</span>
+              </div>
+            </div>
+
+            {/* FICHA DE BÓVEDA & GARANTÍAS DE COLECCIONISTA (Equilibrio visual y confianza) */}
+            <div style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
+              <div style={{
+                fontSize: '10.5px',
+                fontWeight: 800,
+                color: '#ffcb05',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <ShieldCheck size={14} color="#ffcb05" />
+                Garantías de Bóveda PokéVault
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '6px 10px', borderRadius: '6px' }}>
+                  <PackageCheck size={13} color="#34d399" style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '11px' }}>Empaque Blindado: </strong>
+                    <span>Sleeve suave + toploader rígido Ultra-Pro</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '6px 10px', borderRadius: '6px' }}>
+                  <Award size={13} color="#60a5fa" style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '11px' }}>100% Autenticidad: </strong>
+                    <span>Inspección óptica UV y gramaje verificado</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '6px 10px', borderRadius: '6px' }}>
+                  <Truck size={13} color="#fbbf24" style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '11px' }}>Entrega Personal / Envío: </strong>
+                    <span>En stands de eventos o paquetería express asegurada</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
