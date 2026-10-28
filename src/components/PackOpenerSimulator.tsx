@@ -17,7 +17,7 @@ const EXPANSIONS: PackExpansion[] = [
     id: '151',
     name: 'Pokémon 151',
     apiName: '151',
-    packImage: 'https://images.pokemoncenter.com/images/products/P9411/712-98443/712-98443_1.jpg',
+    packImage: '/official_etb.png',
     description: 'Vuelve a los orígenes con los primeros 151 Pokémon clásicos con diseños modernos.',
     releaseYear: '2023'
   },
@@ -25,7 +25,7 @@ const EXPANSIONS: PackExpansion[] = [
     id: 'twilight',
     name: 'Twilight Masquerade',
     apiName: 'Twilight Masquerade',
-    packImage: 'https://images.pokemoncenter.com/images/products/P9832/712-98698/712-98698_1.jpg',
+    packImage: '/official_booster_box.png',
     description: 'Explora la comarca de Norteo y descubre al misterioso Pokémon Ogerpon con sus máscaras.',
     releaseYear: '2024'
   },
@@ -33,7 +33,7 @@ const EXPANSIONS: PackExpansion[] = [
     id: 'temporal',
     name: 'Temporal Forces',
     apiName: 'Temporal Forces',
-    packImage: 'https://images.pokemoncenter.com/images/products/P9642/712-98608/712-98608_1.jpg',
+    packImage: '/official_blister.png',
     description: 'Desata el poder de los Pokémon del Pasado y Futuro con especificaciones ex.',
     releaseYear: '2024'
   },
@@ -41,7 +41,7 @@ const EXPANSIONS: PackExpansion[] = [
     id: 'paldean_fates',
     name: 'Paldean Fates',
     apiName: 'Paldean Fates',
-    packImage: 'https://images.pokemoncenter.com/images/products/P9642/712-98605/712-98605_1.jpg',
+    packImage: '/official_etb.png',
     description: '¡La locura Shiny ha vuelto! Atrapa a Charizard ex, Mew ex y Gardevoir ex en su versión variocolor.',
     releaseYear: '2024'
   },
@@ -49,7 +49,7 @@ const EXPANSIONS: PackExpansion[] = [
     id: 'obsidian',
     name: 'Obsidian Flames',
     apiName: 'Obsidian Flames',
-    packImage: 'https://images.pokemoncenter.com/images/products/P9463/712-98516/712-98516_1.jpg',
+    packImage: '/official_booster_box.png',
     description: 'Llamas ardientes de oscuridad con Charizard ex con tipo cambiado (Teracristal).',
     releaseYear: '2023'
   }

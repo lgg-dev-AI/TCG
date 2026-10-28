@@ -425,7 +425,7 @@ export default function AdminPanel({
         return;
       }
       if (!finalImage && newProdCategory === 'videogame') {
-        finalImage = 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg';
+        finalImage = '/generic_booster_box.png';
       }
     } else if (newProdCategory === 'single') {
       finalImage = newProdImage.trim() || '/generic_card.png';
@@ -609,7 +609,7 @@ export default function AdminPanel({
       else if (editProdCategory === 'booster_box') finalImage = '/official_booster_box.png';
       else if (editProdCategory === 'etb') finalImage = '/official_etb.png';
       else if (editProdCategory === 'blister') finalImage = '/official_blister.png';
-      else if (editProdCategory === 'accessory' || editProdCategory === 'videogame') finalImage = 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg';
+      else if (editProdCategory === 'accessory' || editProdCategory === 'videogame') finalImage = '/generic_booster_box.png';
       else finalImage = '/generic_card.png';
     }
 
@@ -2111,7 +2111,7 @@ export default function AdminPanel({
                         : newProdCategory === 'accessory'
                         ? (newProdFileBase64 || '/generic_etb.png')
                         : newProdCategory === 'videogame'
-                        ? (newProdFileBase64 || newProdImage || 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg')
+                        ? (newProdFileBase64 || newProdImage || '/generic_booster_box.png')
                         : '/generic_card.png'
                     }
                     alt="Vista previa"

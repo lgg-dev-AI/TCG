@@ -30,7 +30,7 @@ export default function Home({
     name: 'Elite Trainer Box (ETB) Pokémon 151',
     price: 1499,
     category: 'etb',
-    image: 'https://images.pokemoncenter.com/images/products/P9411/712-98442/712-98442_1.jpg',
+    image: '/official_etb.png',
     description: 'Edición especial de colección. Incluye 9 sobres de Pokémon 151, 1 carta promo foil de Snorlax, micas de cartas de 151, dados y accesorios de juego.',
     stock: 5,
     expansion: 'Pokémon 151',
@@ -318,8 +318,11 @@ export default function Home({
               zIndex: 1
             }} />
             <img 
-              src="https://images.pokemoncenter.com/images/products/P9832/712-98696/712-98696_1.jpg" 
+              src="https://images.pokemontcg.io/sv3pt5/199_hires.png" 
               alt="Holographic Charizard ex" 
+              onError={(e) => {
+                e.currentTarget.src = '/generic_card.png';
+              }}
               style={{
                 width: '320px',
                 maxHeight: '340px',
