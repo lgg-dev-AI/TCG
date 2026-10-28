@@ -561,7 +561,7 @@ export default function App() {
             }}
             onViewProductDetails={setSelectedProduct}
             onAddToCart={handleAddToCart}
-            inventory={inventory.filter(p => p.gameType === activeGame || !p.gameType || (p.gameType === 'POKEMON' && activeGame === 'POKEMON'))}
+            inventory={inventory.filter(p => p.gameType === activeGame || (activeGame.includes('ONE') && (p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE')) || !p.gameType || (p.gameType === 'POKEMON' && activeGame === 'POKEMON'))}
             activeGame={activeGame}
             onGameChange={(game) => {
               setActiveGame(game);
@@ -576,7 +576,17 @@ export default function App() {
         {currentSection === 'catalog' && (
           <div id="catalog-catalog" style={{ paddingTop: '20px' }}>
             <h2 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '10px', fontFamily: 'var(--font-heading)' }}>
-              {searchQuery ? `Resultados para: "${searchQuery}"` : `Catálogo ${activeGame}`}
+              {searchQuery 
+                ? `Resultados para: "${searchQuery}"` 
+                : (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') 
+                  ? 'Catálogo One Piece Card Game' 
+                  : activeGame === 'POKEMON' 
+                    ? 'Catálogo Pokémon TCG' 
+                    : activeGame === 'YUGIOH' 
+                      ? 'Catálogo Yu-Gi-Oh!' 
+                      : activeGame === 'MAGIC' 
+                        ? 'Catálogo Magic: The Gathering' 
+                        : `Catálogo ${activeGame}`}
             </h2>
             <ProductCatalog
               onAddToCart={handleAddToCart}

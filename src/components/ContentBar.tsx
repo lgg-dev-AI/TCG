@@ -61,7 +61,7 @@ export default function ContentBar({
         id: c.id,
         name: c.name,
         slug: c.slug,
-        gameType: c.slug.toUpperCase(),
+        gameType: c.slug === 'onepiece' ? 'ONE_PIECE' : c.slug.toUpperCase(),
         categoryFilter: c.slug === 'videogames' ? 'videogame' : c.slug === 'accessories' ? 'accessory' : undefined,
         iconName: c.icon,
         color: c.color,

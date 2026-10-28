@@ -46,7 +46,7 @@ export default function ProductCatalog({
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('default');
-  const [maxPrice, setMaxPrice] = useState<number>(10000);
+  const [maxPrice, setMaxPrice] = useState<number>(100000);
   const [expansionFilter, setExpansionFilter] = useState<string>('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [selectedCondition, setSelectedCondition] = useState<string>('all');
@@ -178,10 +178,10 @@ export default function ProductCatalog({
     } else if (activeGame && activeGame !== 'ALL' && selectedCategory !== 'videogame' && selectedCategory !== 'accessory') {
       // Si no se eligió subcategoría específica, respetar el TCG activo de la barra superior
       list = list.filter(p => {
-        if (activeGame === 'POKEMON') return p.gameType === 'POKEMON' || (!p.gameType && p.category !== 'videogame' && p.category !== 'accessory');
-        if (activeGame === 'YUGIOH') return p.gameType === 'YUGIOH';
-        if (activeGame === 'MAGIC') return p.gameType === 'MAGIC';
-        if (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') return p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE';
+        if (activeGame === 'POKEMON') return p.gameType === 'POKEMON' || p.subCategory === 'pokemon' || (!p.gameType && p.category !== 'videogame' && p.category !== 'accessory');
+        if (activeGame === 'YUGIOH') return p.gameType === 'YUGIOH' || p.subCategory === 'yugioh';
+        if (activeGame === 'MAGIC') return p.gameType === 'MAGIC' || p.subCategory === 'magic';
+        if (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') return p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE' || p.subCategory === 'onepiece';
         return true;
       });
     }
@@ -231,7 +231,9 @@ export default function ProductCatalog({
     }
 
     // Filtrar por Precio Máximo
-    list = list.filter(p => p.price <= maxPrice);
+    if (maxPrice < 100000) {
+      list = list.filter(p => p.price <= maxPrice);
+    }
 
     // Filtrar por Expansión (nombre parcial)
     if (expansionFilter.trim()) {
@@ -601,13 +603,13 @@ export default function ProductCatalog({
             {/* Filtro de Precio Máximo */}
             <div style={{ minWidth: '200px', flexGrow: 1 }}>
               <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
-                Precio Máximo: <span style={{ color: 'var(--secondary)', fontWeight: 800 }}>${maxPrice.toLocaleString('es-MX')} MXN</span>
+                Precio Máximo: <span style={{ color: 'var(--secondary)', fontWeight: 800 }}>{maxPrice >= 100000 ? 'Sin Límite ($100k+ MXN)' : `$${maxPrice.toLocaleString('es-MX')} MXN`}</span>
               </label>
               <input
                 type="range"
                 min={100}
-                max={10000}
-                step={100}
+                max={100000}
+                step={500}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 style={{ width: '100%', accentColor: 'var(--primary)', cursor: 'pointer' }}
@@ -615,17 +617,17 @@ export default function ProductCatalog({
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
                 <span>$100</span>
                 <div style={{ display: 'flex', gap: '4px' }}>
-                  {[500, 1500, 3500].map(p => (
+                  {[1000, 5000, 15000, 50000, 100000].map(p => (
                     <button key={p} onClick={() => setMaxPrice(p)}
                       style={{
                         fontSize: '9px', padding: '1px 5px', borderRadius: '4px', cursor: 'pointer',
                         border: '1px solid var(--border-color)',
                         background: maxPrice === p ? 'var(--primary)' : 'transparent',
                         color: maxPrice === p ? 'white' : 'var(--text-muted)'
-                      }}>${(p/1000).toFixed(1)}k</button>
+                      }}>{p >= 100000 ? 'Todos' : `$${(p/1000).toFixed(0)}k`}</button>
                   ))}
                 </div>
-                <span>$10k</span>
+                <span>$100k+</span>
               </div>
             </div>
 

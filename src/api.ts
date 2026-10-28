@@ -154,7 +154,30 @@ export const apiGetProducts = async () => {
     if (local) {
       try {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length >= 10) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Fusionar con INITIAL_PRODUCTS para garantizar que todos los nuevos productos (ej. One Piece)
+          // y URLs de imágenes actualizadas se reflejen de inmediato sin borrar productos creados por el admin
+          const initialMap = new Map(INITIAL_PRODUCTS.map(p => [p.id, p]));
+          const updated = parsed.map((p: any) => {
+            const fresh = initialMap.get(p.id);
+            if (fresh) {
+              return { 
+                ...fresh, 
+                ...p, 
+                image: fresh.image, 
+                gameType: fresh.gameType || p.gameType, 
+                subCategory: fresh.subCategory || p.subCategory,
+                price: p.price ?? fresh.price
+              };
+            }
+            return p;
+          });
+          const existingIds = new Set(updated.map((p: any) => p.id));
+          const missing = INITIAL_PRODUCTS.filter(p => !existingIds.has(p.id));
+          const fullList = [...updated, ...missing];
+          localStorage.setItem('pokevault_standalone_products', JSON.stringify(fullList));
+          return fullList;
+        }
       } catch {}
     }
     // Guardar catálogo inicial completo en localStorage para persistencia y modificaciones
@@ -179,7 +202,28 @@ export const apiGetAllProductsAdmin = async () => {
     if (local) {
       try {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length >= 10) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const initialMap = new Map(INITIAL_PRODUCTS.map(p => [p.id, p]));
+          const updated = parsed.map((p: any) => {
+            const fresh = initialMap.get(p.id);
+            if (fresh) {
+              return { 
+                ...fresh, 
+                ...p, 
+                image: fresh.image, 
+                gameType: fresh.gameType || p.gameType, 
+                subCategory: fresh.subCategory || p.subCategory,
+                price: p.price ?? fresh.price
+              };
+            }
+            return p;
+          });
+          const existingIds = new Set(updated.map((p: any) => p.id));
+          const missing = INITIAL_PRODUCTS.filter(p => !existingIds.has(p.id));
+          const fullList = [...updated, ...missing];
+          localStorage.setItem('pokevault_standalone_products', JSON.stringify(fullList));
+          return fullList;
+        }
       } catch {}
     }
     localStorage.setItem('pokevault_standalone_products', JSON.stringify(INITIAL_PRODUCTS));

@@ -208,7 +208,7 @@ export default function Navbar({
             {/* TCG Selector */}
             <li style={{ display: 'flex', alignItems: 'center', marginLeft: '16px' }}>
               <select
-                value={activeGame}
+                value={activeGame === 'ONEPIECE' ? 'ONE_PIECE' : activeGame}
                 onChange={(e) => onGameChange(e.target.value)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -466,7 +466,7 @@ export default function Navbar({
             <li style={{ padding: '0 16px' }}>
               <label style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>Juego Activo:</label>
               <select
-                value={activeGame}
+                value={activeGame === 'ONEPIECE' ? 'ONE_PIECE' : activeGame}
                 onChange={(e) => {
                   onGameChange(e.target.value);
                   setMobileMenuOpen(false);
