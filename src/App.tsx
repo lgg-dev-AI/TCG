@@ -31,7 +31,9 @@ import {
   apiGetMyBuybacks,
   apiGetAllBuybacksAdmin,
   apiUpdateBuybackStatus,
-  apiRegisterManualSale
+  apiRegisterManualSale,
+  apiGetCategories,
+  type CategoryItem
 } from './api';
 
 // Helper to map product data from backend structure to legacy frontend structure
@@ -95,6 +97,7 @@ export default function App() {
   const [inventory, setInventory] = useState<Product[]>([]);
   const [productCache, setProductCache] = useState<Product[]>(() => getStorage('kt_productCache', []));
   const [usersList, setUsersList] = useState<UserData[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
 
   // Cupones y otros estados estáticos temporales (retained in localStorage for mock-based configs)
   const [coupons, setCoupons] = useState<Coupon[]>(() => getStorage('kt_coupons', [
@@ -141,6 +144,11 @@ export default function App() {
         setBankSettings(settings);
       })
       .catch((err) => console.error('Error al cargar configuraciones de banco:', err));
+
+    // 3. Cargar árbol de categorías y barra de contenido
+    apiGetCategories()
+      .then((cats) => setCategories(cats))
+      .catch((err) => console.error('Error al cargar categorías:', err));
 
     // 3. Recuperar sesión con JWT token si existe
     const token = localStorage.getItem('jwt_token');
@@ -477,6 +485,21 @@ export default function App() {
           setCurrentSection('catalog');
           setCatalogCategory('all');
         }}
+        categories={categories}
+        onSelectCategory={(cat) => {
+          setCatalogCategory(cat);
+          setCurrentSection('catalog');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectDeals={() => {
+          setCatalogCategory('deals');
+          setCurrentSection('catalog');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onConfigureBar={() => {
+          setCurrentSection('admin');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       {/* Contenido Principal */}
@@ -499,6 +522,12 @@ export default function App() {
             onAddToCart={handleAddToCart}
             inventory={inventory.filter(p => p.gameType === activeGame || !p.gameType || (p.gameType === 'POKEMON' && activeGame === 'POKEMON'))}
             activeGame={activeGame}
+            onGameChange={(game) => {
+              setActiveGame(game);
+              setCatalogCategory('all');
+              setCurrentSection('catalog');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
           />
         )}
 

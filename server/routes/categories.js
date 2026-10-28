@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/categories - Crear categoría o subcategoría (Admin)
 router.post('/', authenticate, requireAdmin, async (req, res) => {
-  const { name, parent_id, icon, color, order_index } = req.body;
+  const { name, parent_id, icon, color, order_index, is_content_bar } = req.body;
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'El nombre de la categoría es obligatorio' });
   }
@@ -27,8 +27,8 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 
   try {
     await run(
-      `INSERT INTO categories (id, name, slug, parent_id, icon, color, order_index)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO categories (id, name, slug, parent_id, icon, color, order_index, is_content_bar)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         name.trim(),
@@ -36,7 +36,8 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
         parent_id || null,
         icon || 'Package',
         color || '#3b82f6',
-        Number(order_index) || 0
+        Number(order_index) || 0,
+        is_content_bar !== undefined ? (is_content_bar ? 1 : 0) : 1
       ]
     );
 
@@ -57,7 +58,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 // PUT /api/categories/:id - Actualizar categoría (Admin)
 router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, parent_id, icon, color, order_index } = req.body;
+  const { name, parent_id, icon, color, order_index, is_content_bar } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'El nombre es obligatorio' });
@@ -73,7 +74,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 
     await run(
       `UPDATE categories 
-       SET name = ?, slug = ?, parent_id = ?, icon = ?, color = ?, order_index = ?
+       SET name = ?, slug = ?, parent_id = ?, icon = ?, color = ?, order_index = ?, is_content_bar = ?
        WHERE id = ?`,
       [
         name.trim(),
@@ -82,6 +83,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
         icon || existing.icon,
         color || existing.color,
         order_index !== undefined ? Number(order_index) : existing.order_index,
+        is_content_bar !== undefined ? (is_content_bar ? 1 : 0) : existing.is_content_bar,
         id
       ]
     );

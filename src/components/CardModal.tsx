@@ -1,5 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { X, ShoppingCart, ZoomIn, ShieldCheck, HelpCircle } from 'lucide-react';
+import { 
+  X, ShoppingCart, ZoomIn, ShieldCheck, HelpCircle, 
+  TrendingUp, FileText, Award, Plus, Minus
+} from 'lucide-react';
 import type { Product } from './ProductItem';
 import MarketPriceHistory from './MarketPriceHistory';
 import ConditionGuideModal from './ConditionGuideModal';
@@ -16,6 +19,8 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number; show: boolean }>({ x: 50, y: 50, show: false });
   const [isConditionGuideOpen, setIsConditionGuideOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'market' | 'details' | 'guarantee'>('market');
+  
   const cardRef = useRef<HTMLDivElement>(null);
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
   const [foilStyle, setFoilStyle] = useState<React.CSSProperties>({});
@@ -66,6 +71,13 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
     });
   };
 
+  const USD_TO_MXN = 20;
+  const tcgPrices = cardData?.tcgplayer?.prices;
+  const holo = tcgPrices?.holofoil || tcgPrices?.reverseHolofoil || tcgPrices?.normal;
+  const marketMxn = product.marketPrice || (holo?.market ? Math.round(holo.market * USD_TO_MXN) : Math.round(product.price * 1.15));
+  const priceDiffMxn = marketMxn - product.price;
+  const discountPercent = marketMxn > 0 ? Math.round((priceDiffMxn / marketMxn) * 100) : 0;
+
   return (
     <div style={{
       position: 'fixed',
@@ -73,40 +85,40 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(5, 5, 8, 0.85)',
-      backdropFilter: 'blur(8px)',
+      backgroundColor: 'rgba(5, 5, 8, 0.88)',
+      backdropFilter: 'blur(10px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 200,
-      padding: '20px',
+      padding: '16px',
     }}>
       {/* Modal Card Box */}
       <div 
         className="glass animate-fade-in-up" 
         style={{
           width: '100%',
-          maxWidth: '850px',
-          maxHeight: '90vh',
-          borderRadius: '16px',
-          backgroundColor: '#121622',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: 'var(--shadow-lg)',
+          maxWidth: '960px',
+          maxHeight: '92vh',
+          borderRadius: '18px',
+          backgroundColor: '#0f141f',
+          border: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.75)',
           overflowY: 'auto',
           position: 'relative',
-          padding: '30px'
+          padding: '24px'
         }}
       >
-        {/* Close Button */}
+        {/* Botón Cerrar */}
         <button 
           onClick={onClose}
           aria-label="Cerrar detalles"
           style={{
             position: 'absolute',
-            top: '20px',
-            right: '20px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid var(--border-color)',
+            top: '16px',
+            right: '16px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.15)',
             color: 'var(--text-main)',
             width: '36px',
             height: '36px',
@@ -118,26 +130,28 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
             transition: 'all 0.2s ease',
             zIndex: 10
           }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'}
         >
           <X size={18} />
         </button>
 
-        {/* Contenido Grid */}
+        {/* Layout en 2 Columnas Estilo TCGplayer Pro */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr',
-          gap: '30px',
-          alignItems: 'center',
-        }} className="modal-content-grid">
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '28px',
+          alignItems: 'start'
+        }}>
           
-          {/* Lado Izquierdo: Visual (Carta en 3D o producto sellado) */}
+          {/* COLUMNA IZQUIERDA: Visor de Carta 3D, Lupa y Galería */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '14px'
+            gap: '14px',
+            position: 'sticky',
+            top: 0
           }}>
             <div style={{
               display: 'flex',
@@ -164,7 +178,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                     setZoomCoords(prev => ({ ...prev, show: false }));
                   }}
                   style={{
-                    maxWidth: '300px',
+                    maxWidth: '290px',
                     width: '100%',
                     aspectRatio: '2.5 / 3.5',
                     position: 'relative',
@@ -176,7 +190,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                     ref={cardRef}
                     style={{
                       ...tiltStyle,
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+                      boxShadow: '0 20px 45px rgba(0,0,0,0.7)'
                     }}
                   >
                     <img src={currentImage} alt={product.name} />
@@ -189,12 +203,12 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                       position: 'absolute',
                       top: `${zoomCoords.y}%`,
                       left: `${zoomCoords.x}%`,
-                      width: '130px',
-                      height: '130px',
+                      width: '140px',
+                      height: '140px',
                       transform: 'translate(-50%, -50%)',
                       borderRadius: '50%',
-                      border: '3px solid var(--secondary)',
-                      boxShadow: '0 0 25px rgba(0,0,0,0.9), 0 0 10px rgba(255, 203, 5, 0.5)',
+                      border: '3px solid #ffcb05',
+                      boxShadow: '0 0 30px rgba(0,0,0,0.9), 0 0 12px rgba(255, 203, 5, 0.6)',
                       pointerEvents: 'none',
                       backgroundImage: `url(${currentImage})`,
                       backgroundPosition: `${zoomCoords.x}% ${zoomCoords.y}%`,
@@ -216,7 +230,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                   }}
                   onMouseLeave={() => setZoomCoords(prev => ({ ...prev, show: false }))}
                   style={{
-                    maxWidth: '320px',
+                    maxWidth: '300px',
                     width: '100%',
                     backgroundColor: 'rgba(255,255,255,0.02)',
                     borderRadius: '12px',
@@ -233,7 +247,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                     alt={product.name} 
                     style={{
                       width: '100%',
-                      maxHeight: '300px',
+                      maxHeight: '290px',
                       objectFit: 'contain'
                     }}
                   />
@@ -242,16 +256,16 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                       position: 'absolute',
                       top: `${zoomCoords.y}%`,
                       left: `${zoomCoords.x}%`,
-                      width: '130px',
-                      height: '130px',
+                      width: '140px',
+                      height: '140px',
                       transform: 'translate(-50%, -50%)',
                       borderRadius: '50%',
-                      border: '3px solid var(--secondary)',
-                      boxShadow: '0 0 25px rgba(0,0,0,0.9), 0 0 10px rgba(255, 203, 5, 0.5)',
+                      border: '3px solid #ffcb05',
+                      boxShadow: '0 0 30px rgba(0,0,0,0.9), 0 0 12px rgba(255, 203, 5, 0.6)',
                       pointerEvents: 'none',
                       backgroundImage: `url(${currentImage})`,
                       backgroundPosition: `${zoomCoords.x}% ${zoomCoords.y}%`,
-                      backgroundSize: '260%',
+                      backgroundSize: '280%',
                       zIndex: 60,
                       backgroundColor: '#000'
                     }} />
@@ -260,8 +274,8 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
               )}
             </div>
 
-            {/* Botón Lupa de Inspección y Estado de Foto */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+            {/* Selector de Lupa y Verificación */}
+            <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'center' }}>
               <button
                 type="button"
                 onClick={() => setZoomActive(!zoomActive)}
@@ -269,35 +283,48 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  backgroundColor: zoomActive ? 'rgba(255, 203, 5, 0.2)' : 'rgba(255, 255, 255, 0.06)',
-                  border: zoomActive ? '1px solid var(--secondary)' : '1px solid var(--border-color)',
-                  color: zoomActive ? 'var(--secondary)' : 'var(--text-secondary)',
-                  padding: '6px 14px',
-                  borderRadius: '20px',
+                  backgroundColor: zoomActive ? 'rgba(255, 203, 5, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  border: zoomActive ? '1px solid #ffcb05' : '1px solid var(--border-color)',
+                  color: zoomActive ? '#ffcb05' : 'var(--text-secondary)',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
                   fontSize: '11px',
-                  fontWeight: 700,
                   cursor: 'pointer',
-                  transition: 'all 0.2s'
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
                 }}
               >
-                <ZoomIn size={13} />
-                {zoomActive ? 'Lupa Activa (2.8x Zoom)' : '🔍 Activar Lupa de Inspección'}
+                <ZoomIn size={14} />
+                {zoomActive ? 'Lupa Activa (2.8x)' : 'Inspeccionar Detalles'}
               </button>
 
-              {activeImageIndex > 0 ? (
-                <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 600 }}>
-                  ✓ Foto real #{activeImageIndex} (Esquinas / Superficie)
-                </span>
-              ) : (
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                  {allImages.length > 1 ? 'Portada oficial (Selecciona fotos abajo para ver estado real)' : 'Foto de catálogo'}
-                </span>
+              {product.cardCondition && (
+                <button
+                  type="button"
+                  onClick={() => setIsConditionGuideOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    color: '#60a5fa',
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  <HelpCircle size={13} />
+                  Guía {product.cardCondition}
+                </button>
               )}
             </div>
 
-            {/* Selector de Galería de Fotos (Fotos Reales de Integridad) */}
+            {/* Miniaturas de Galería */}
             {allImages.length > 1 && (
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', maxWidth: '320px', padding: '4px' }}>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', maxWidth: '300px', padding: '4px' }}>
                 {allImages.map((imgUrl, i) => (
                   <button
                     key={i}
@@ -308,7 +335,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                       height: '60px',
                       borderRadius: '4px',
                       overflow: 'hidden',
-                      border: activeImageIndex === i ? '2px solid var(--secondary)' : '1px solid rgba(255,255,255,0.15)',
+                      border: activeImageIndex === i ? '2px solid #ffcb05' : '1px solid rgba(255,255,255,0.15)',
                       padding: 0,
                       background: 'rgba(0,0,0,0.3)',
                       cursor: 'pointer',
@@ -322,277 +349,192 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Lado Derecho: Información */}
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
-            <div>
-              {/* Categoría / Set */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{
-                  fontSize: '11px',
-                  color: 'var(--secondary)',
-                  textTransform: 'uppercase',
-                  fontWeight: 800,
-                  letterSpacing: '0.05em',
-                  background: 'rgba(255, 203, 5, 0.1)',
-                  padding: '4px 10px',
-                  borderRadius: '20px'
-                }}>
-                  {product.category === 'single' ? 'Carta Suelta' : product.category === 'videogame' ? '🎮 Videojuego / Consola' : product.category === 'accessory' ? 'Accesorio' : 'Producto Sellado'}
-                </span>
-                {product.isFirstEdition && (
-                  <span style={{
-                    fontSize: '11px',
-                    color: '#ffcb05',
-                    background: 'linear-gradient(135deg, rgba(255, 203, 5, 0.2), rgba(0, 0, 0, 0.4))',
-                    border: '1.5px solid #ffcb05',
-                    padding: '3px 10px',
-                    borderRadius: '20px',
-                    fontWeight: 900,
-                    letterSpacing: '0.05em',
-                    boxShadow: '0 0 10px rgba(255, 203, 5, 0.3)'
-                  }}>
-                    ⭐ 1ª EDICIÓN
-                  </span>
-                )}
-                {isSingle && cardData?.types && cardData.types.map(t => (
-                  <span key={t} className={`type-badge type-${t.toLowerCase()}`}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-
-              {/* Título */}
-              <h2 style={{
-                fontSize: '24px',
-                fontWeight: 800,
-                lineHeight: 1.2,
-                color: '#ffffff',
-                marginBottom: '10px',
-                fontFamily: 'var(--font-heading)'
-              }}>
-                {product.name}
-              </h2>
-
-              {/* Atributos de Videojuegos */}
-              {product.category === 'videogame' && (
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                  marginBottom: '20px'
-                }}>
-                  {product.platform && (
-                    <span style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: product.platform.toLowerCase().includes('switch') ? 'rgba(230, 0, 18, 0.2)' : product.platform.toLowerCase().includes('playstation') ? 'rgba(0, 55, 145, 0.25)' : product.platform.toLowerCase().includes('xbox') ? 'rgba(16, 124, 65, 0.25)' : 'rgba(147, 51, 234, 0.2)',
-                      color: product.platform.toLowerCase().includes('switch') ? '#ff5252' : product.platform.toLowerCase().includes('playstation') ? '#60a5fa' : product.platform.toLowerCase().includes('xbox') ? '#4ade80' : '#c084fc',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      fontWeight: 800
-                    }}>
-                      🎮 Plataforma: {product.platform}
-                    </span>
-                  )}
-                  {(product.completeness || product.cardCondition) && (
-                    <span style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(52, 211, 153, 0.12)',
-                      color: '#34d399',
-                      border: '1px solid rgba(52, 211, 153, 0.25)',
-                      fontWeight: 700
-                    }}>
-                      📦 Estado: {product.completeness || product.cardCondition}
-                    </span>
-                  )}
-                  <span style={{
-                    fontSize: '11px',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                    color: 'var(--text-secondary)',
-                    border: '1px solid var(--border-color)',
-                    fontWeight: 600
-                  }}>
-                    ⚡ Probado y Funcionando 100%
-                  </span>
-                </div>
-              )}
-
-              {/* Expansión / Rarity / Artista */}
-              {isSingle && (
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '16px',
-                  fontSize: '13px',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '20px'
-                }}>
-                  <span><strong>Set:</strong> {cardData?.id.split('-')[0].toUpperCase()}</span>
-                  <span><strong>Rareza:</strong> {cardData?.rarity || 'Común'}</span>
-                  {cardData?.artist && <span><strong>Artista:</strong> {cardData.artist}</span>}
-                </div>
-              )}
-
-              {/* Atributos Físicos de Carta Suelta */}
-              {isSingle && (product.region || product.cardCondition || product.pulledFrom || product.isFirstEdition) && (
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                  marginBottom: '20px'
-                }}>
-                  {product.isFirstEdition && (
-                    <span style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(255, 203, 5, 0.15)',
-                      color: '#ffcb05',
-                      border: '1.5px solid #ffcb05',
-                      fontWeight: 800,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      boxShadow: '0 0 8px rgba(255, 203, 5, 0.25)'
-                    }}>
-                      ⭐ Sello 1ª Edición (First Edition)
-                    </span>
-                  )}
-                  {product.region && (
-                    <span style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(96, 165, 250, 0.12)',
-                      color: '#60a5fa',
-                      border: '1px solid rgba(96, 165, 250, 0.25)',
-                      fontWeight: 700
-                    }}>
-                      🌐 Idioma: {product.region}
-                    </span>
-                  )}
-                  {product.cardCondition && (
-                    <button
-                      onClick={() => setIsConditionGuideOpen(true)}
-                      title="Ver Guía de Estados TCGplayer"
-                      style={{
-                        fontSize: '11px',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                        color: '#f59e0b',
-                        border: '1px solid rgba(245, 158, 11, 0.25)',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      ✨ Condición: {product.cardCondition === 'NM' ? 'Near Mint (NM)' : product.cardCondition === 'LP' ? 'Lightly Played (LP)' : product.cardCondition === 'MP' ? 'Moderately Played (MP)' : 'Heavily Played (HP)'}
-                      <HelpCircle size={12} style={{ opacity: 0.8 }} />
-                    </button>
-                  )}
-                  {product.pulledFrom && (
-                    <span style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--border-color)',
-                      fontWeight: 600
-                    }}>
-                      📦 Sobre: {product.pulledFrom}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Descripción */}
-              <p style={{
-                fontSize: '14px',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.6,
-                marginBottom: '24px'
-              }}>
-                {product.description}
-              </p>
-
-              {/* Estadísticas de TCG (Si es una carta) */}
-              {isSingle && cardData?.attacks && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h4 style={{ fontSize: '13px', textTransform: 'uppercase', color: '#fff', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', fontWeight: 700 }}>
-                    Ataques y Habilidades
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {cardData.attacks.map((attack, index) => (
-                      <div key={index} style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#ffffff' }}>{attack.name}</span>
-                          <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--secondary)' }}>{attack.damage || ''}</span>
-                        </div>
-                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>{attack.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Historial de Precios y Tendencias de Mercado (TCGplayer) */}
-              <MarketPriceHistory 
-                product={product} 
-                onOpenConditionGuide={() => setIsConditionGuideOpen(true)} 
-              />
-            </div>
-
-            {/* Fila de Compra */}
+            {/* Badge de Garantía de Autenticidad */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              borderTop: '1px solid var(--border-color)',
-              paddingTop: '20px',
-              gap: '16px',
+              gap: '6px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              fontSize: '11px',
+              color: '#34d399',
+              fontWeight: 700
+            }}>
+              <ShieldCheck size={15} />
+              <span>100% Auténtico Verificado PokéVault</span>
+            </div>
+          </div>
+
+          {/* COLUMNA DERECHA: Datos del Producto, Compra y Pestañas */}
+          <div>
+            {/* Header: Badges y Título */}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <span style={{
+                fontSize: '10.5px',
+                color: '#ffcb05',
+                textTransform: 'uppercase',
+                fontWeight: 800,
+                letterSpacing: '0.05em',
+                background: 'rgba(255, 203, 5, 0.1)',
+                padding: '3px 8px',
+                borderRadius: '6px'
+              }}>
+                {product.category === 'single' ? 'Carta Suelta' : product.category === 'videogame' ? '🎮 Videojuego' : product.category === 'accessory' ? 'Accesorio' : 'Producto Sellado'}
+              </span>
+
+              {product.isFirstEdition && (
+                <span style={{
+                  fontSize: '10.5px',
+                  color: '#ffcb05',
+                  background: 'linear-gradient(135deg, rgba(255, 203, 5, 0.2), rgba(0, 0, 0, 0.4))',
+                  border: '1.5px solid #ffcb05',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  fontWeight: 900,
+                  boxShadow: '0 0 8px rgba(255, 203, 5, 0.3)'
+                }}>
+                  ⭐ 1ª EDICIÓN
+                </span>
+              )}
+
+              {product.region && (
+                <span style={{
+                  fontSize: '10.5px',
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(96, 165, 250, 0.12)',
+                  color: '#60a5fa',
+                  border: '1px solid rgba(96, 165, 250, 0.25)',
+                  fontWeight: 700
+                }}>
+                  🌐 {product.region}
+                </span>
+              )}
+
+              {product.cardCondition && (
+                <span style={{
+                  fontSize: '10.5px',
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(52, 211, 153, 0.12)',
+                  color: '#34d399',
+                  border: '1px solid rgba(52, 211, 153, 0.25)',
+                  fontWeight: 700
+                }}>
+                  ✨ {product.cardCondition === 'NM' ? 'Near Mint (NM)' : product.cardCondition === 'LP' ? 'Lightly Played (LP)' : product.cardCondition}
+                </span>
+              )}
+            </div>
+
+            {/* Nombre del Producto */}
+            <h2 style={{
+              fontSize: '22px',
+              fontWeight: 800,
+              lineHeight: 1.25,
+              color: '#ffffff',
+              margin: '0 0 12px 0',
+              fontFamily: 'var(--font-heading)'
+            }}>
+              {product.name}
+            </h2>
+
+            {/* Set y Rareza */}
+            <div style={{
+              display: 'flex',
               flexWrap: 'wrap',
+              gap: '12px',
+              fontSize: '12px',
+              color: 'var(--text-secondary)',
+              marginBottom: '16px'
+            }}>
+              {product.expansion && <span><strong>Expansión:</strong> {product.expansion}</span>}
+              {cardData?.rarity && <span><strong>Rareza:</strong> {cardData.rarity}</span>}
+              {cardData?.artist && <span><strong>Arte:</strong> {cardData.artist}</span>}
+              {product.platform && <span><strong>Plataforma:</strong> {product.platform}</span>}
+            </div>
+
+            {/* HERO PURCHASE BAR: Precio, Comparativa TCGplayer y Botón de Compra Directo */}
+            <div style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '14px'
             }}>
               <div>
-                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Precio PokéVault:</span>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: 'var(--secondary)', lineHeight: 1 }}>
-                  ${product.price.toLocaleString('es-MX')} MXN
+                <span style={{ display: 'block', fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>
+                  Precio PokéVault:
                 </span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{ fontSize: '26px', fontWeight: 900, color: '#ffcb05', lineHeight: 1 }}>
+                    ${product.price.toLocaleString('es-MX')} MXN
+                  </span>
+                  {discountPercent > 0 && (
+                    <span style={{
+                      fontSize: '11px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                      color: '#34d399',
+                      fontWeight: 800
+                    }}>
+                      -{discountPercent}% vs TCGplayer
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                  TCGplayer Market: <span style={{ color: '#93c5fd' }}>${marketMxn.toLocaleString('es-MX')} MXN</span>
+                </div>
               </div>
 
-              {/* Selector de cantidad y agregar */}
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              {/* Controles de Compra */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
                   borderRadius: '8px',
                   overflow: 'hidden'
                 }}>
                   <button 
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    style={{ background: 'none', border: 'none', color: '#fff', width: '32px', height: '36px', cursor: 'pointer', fontSize: '16px' }}
+                    disabled={quantity <= 1}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '8px 10px',
+                      cursor: quantity <= 1 ? 'not-allowed' : 'pointer',
+                      opacity: quantity <= 1 ? 0.3 : 1
+                    }}
                   >
-                    -
+                    <Minus size={14} />
                   </button>
-                  <span style={{ color: '#fff', padding: '0 12px', fontSize: '14px', fontWeight: 700 }}>
+                  <span style={{ padding: '0 8px', fontWeight: 700, fontSize: '14px', color: '#fff' }}>
                     {quantity}
                   </span>
                   <button 
                     onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                    style={{ background: 'none', border: 'none', color: '#fff', width: '32px', height: '36px', cursor: 'pointer', fontSize: '16px' }}
+                    disabled={quantity >= product.stock}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '8px 10px',
+                      cursor: quantity >= product.stock ? 'not-allowed' : 'pointer',
+                      opacity: quantity >= product.stock ? 0.3 : 1
+                    }}
                   >
-                    +
+                    <Plus size={14} />
                   </button>
                 </div>
 
@@ -601,49 +543,173 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                     onAddToCart(product, quantity);
                     onClose();
                   }}
-                  disabled={product.stock === 0}
+                  disabled={product.stock <= 0}
                   className="btn btn-primary"
                   style={{
-                    padding: '10px 24px',
-                    opacity: product.stock === 0 ? 0.5 : 1,
-                    cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    borderRadius: '8px'
                   }}
                 >
-                  <ShoppingCart size={16} /> Agregar al Carrito
+                  <ShoppingCart size={16} />
+                  {product.stock > 0 ? 'Agregar al Carrito' : 'Agotado'}
                 </button>
               </div>
             </div>
 
-            {/* Sello de Garantía de Coleccionista y Empaque Seguro */}
+            {/* PESTAÑAS ESTILO TCGPLAYER PRO */}
             <div style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              backgroundColor: 'rgba(52, 211, 153, 0.05)',
-              border: '1px solid rgba(52, 211, 153, 0.2)',
-              borderRadius: '10px',
-              padding: '12px 14px',
-              marginTop: '16px'
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              gap: '4px',
+              marginBottom: '16px'
             }}>
-              <ShieldCheck size={22} color="#34d399" style={{ flexShrink: 0 }} />
-              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                <strong style={{ color: '#34d399' }}>Garantía de Coleccionista PokéVault:</strong> Cada carta se envía protegida con <b>Sleeve Ultra-Pro + Toploader rígido</b> dentro de sobre burbuja blindado contra dobleces.
-              </div>
+              <button
+                onClick={() => setActiveTab('market')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 14px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: activeTab === 'market' ? '2px solid #ffcb05' : '2px solid transparent',
+                  color: activeTab === 'market' ? '#ffcb05' : 'var(--text-secondary)',
+                  fontWeight: activeTab === 'market' ? 800 : 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <TrendingUp size={15} />
+                <span>📈 Tendencias & Precios TCGplayer</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('details')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 14px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: activeTab === 'details' ? '2px solid #ffcb05' : '2px solid transparent',
+                  color: activeTab === 'details' ? '#ffcb05' : 'var(--text-secondary)',
+                  fontWeight: activeTab === 'details' ? 800 : 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <FileText size={15} />
+                <span>🃏 Ficha Técnica & Ataques</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('guarantee')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 14px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: activeTab === 'guarantee' ? '2px solid #ffcb05' : '2px solid transparent',
+                  color: activeTab === 'guarantee' ? '#ffcb05' : 'var(--text-secondary)',
+                  fontWeight: activeTab === 'guarantee' ? 800 : 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <ShieldCheck size={15} />
+                <span>🛡️ Estado & Garantía</span>
+              </button>
             </div>
+
+            {/* CONTENIDO DE PESTAÑAS */}
+
+            {/* TAB 1: GRÁFICA Y TENDENCIAS TCGPLAYER (FRONT AND CENTER) */}
+            {activeTab === 'market' && (
+              <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
+                <MarketPriceHistory 
+                  product={product} 
+                  onOpenConditionGuide={() => setIsConditionGuideOpen(true)} 
+                />
+              </div>
+            )}
+
+            {/* TAB 2: DETALLES, ATAQUES Y REGLAS */}
+            {activeTab === 'details' && (
+              <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
+                {/* Descripción general */}
+                <p style={{
+                  fontSize: '13.5px',
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.6,
+                  marginBottom: '18px'
+                }}>
+                  {product.description || 'Sin descripción adicional para este producto.'}
+                </p>
+
+                {/* Ataques y Habilidades */}
+                {isSingle && cardData?.attacks && cardData.attacks.length > 0 && (
+                  <div>
+                    <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: '#fff', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', fontWeight: 800 }}>
+                      Ataques y Habilidades Oficiales
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {cardData.attacks.map((attack, index) => (
+                        <div key={index} style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: '#ffffff' }}>{attack.name}</span>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: '#ffcb05' }}>{attack.damage || ''}</span>
+                          </div>
+                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>{attack.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: ESTADO Y GARANTÍA */}
+            {activeTab === 'guarantee' && (
+              <div style={{
+                animation: 'fadeIn 0.2s ease-out',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '10px',
+                padding: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.06)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Award size={18} color="#ffcb05" />
+                  <strong style={{ fontSize: '14px', color: '#fff' }}>Políticas de Calidad & Protección al Coleccionista</strong>
+                </div>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                  En PokéVault cada carta o producto pasa por un riguroso proceso de autenticación visual y física para garantizar que recibes un artículo 100% original con envío protegido (micas sleeves + toploader rígido + sobre burbuja).
+                </p>
+                <button
+                  onClick={() => setIsConditionGuideOpen(true)}
+                  className="btn btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '8px 14px' }}
+                >
+                  <HelpCircle size={14} /> Abrir Guía Completa de Estados (NM, LP, MP, HP, DMG)
+                </button>
+              </div>
+            )}
 
           </div>
         </div>
       </div>
 
-      <style>{`
-        @media (min-width: 768px) {
-          .modal-content-grid {
-            grid-template-columns: 320px 1fr !important;
-          }
-        }
-      `}</style>
-
-      {/* Modal interactivo de Guía de Estados TCGplayer */}
+      {/* Modal de Guía de Condiciones */}
       <ConditionGuideModal 
         isOpen={isConditionGuideOpen} 
         onClose={() => setIsConditionGuideOpen(false)} 

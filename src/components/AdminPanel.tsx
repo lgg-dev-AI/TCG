@@ -1004,7 +1004,7 @@ export default function AdminPanel({
             fontWeight: 700
           }}
         >
-          <FolderTree size={15} /> 📁 Categorías & Subcategorías
+          <FolderTree size={15} /> 📁 Categorías & Barra de Contenido
         </button>
       </div>
 

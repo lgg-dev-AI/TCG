@@ -383,6 +383,7 @@ export interface CategoryItem {
   icon?: string;
   color?: string;
   order_index?: number;
+  is_content_bar?: boolean | number;
 }
 
 export const DEFAULT_FALLBACK_CATEGORIES: CategoryItem[] = [

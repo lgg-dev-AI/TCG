@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Truck, CreditCard, ChevronRight, ShoppingCart, Eye, Award, Flame, ChevronLeft } from 'lucide-react';
+import { 
+  Sparkles, Truck, CreditCard, ChevronRight, ShoppingCart, Eye, Award, 
+  Flame, ChevronLeft, Swords, Ship, Wand2, Gamepad2, ShieldCheck, Tag 
+} from 'lucide-react';
 import type { Product } from './ProductItem';
 
 interface HomeProps {
@@ -9,6 +12,7 @@ interface HomeProps {
   onAddToCart: (product: Product) => void;
   inventory: Product[];
   activeGame: string;
+  onGameChange?: (game: string) => void;
 }
 
 export default function Home({
@@ -17,7 +21,8 @@ export default function Home({
   onViewProductDetails,
   onAddToCart,
   inventory,
-  activeGame
+  activeGame,
+  onGameChange
 }: HomeProps) {
   // Encontrar el producto recomendado en el catálogo (ETB 151 o el primero disponible)
   const recommendedProduct = inventory.find(p => p.id === 'sealed_2') || inventory[0] || {
@@ -328,7 +333,139 @@ export default function Home({
         </div>
       </section>
 
-      {/* 2. PRODUCTO RECOMENDADO DESTACADO (Holographic tilt card) */}
+      {/* 2. EXPLORA POR TCG & CATEGORÍA (TCGplayer Game Showcase) */}
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <span style={{ fontSize: '11px', color: '#ffcb05', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              Directorio de Coleccionismo
+            </span>
+            <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'white', margin: '4px 0 0 0', fontFamily: 'var(--font-heading)' }}>
+              Explora por TCG & Categoría
+            </h2>
+          </div>
+          <button
+            onClick={onExploreClick}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#60a5fa',
+              fontSize: '13px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            Ver catálogo completo <ChevronRight size={14} />
+          </button>
+        </div>
+
+        {/* Grid de Juegos y Categorías */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '16px'
+        }}>
+          {[
+            { id: 'pokemon', name: 'Pokémon TCG', type: 'POKEMON', icon: Sparkles, color: '#ffcb05', desc: 'Singles, Booster Boxes, ETBs 151 y Prismatic' },
+            { id: 'magic', name: 'Magic: The Gathering', type: 'MAGIC', icon: Flame, color: '#f97316', desc: 'Commander, Modern Horizons, Collector Boosters' },
+            { id: 'yugioh', name: 'Yu-Gi-Oh!', type: 'YUGIOH', icon: Swords, color: '#ef4444', desc: 'Quarter Century Rares, Core Sets, Barajas' },
+            { id: 'onepiece', name: 'One Piece Card Game', type: 'ONE_PIECE', icon: Ship, color: '#06b6d4', desc: 'Romance Dawn, Wings of Captain, OP-05', badge: 'POPULAR' },
+            { id: 'lorcana', name: 'Disney Lorcana', type: 'LORCANA', icon: Wand2, color: '#a855f7', desc: 'The First Chapter, Inklands, Illumineer Troves' },
+            { id: 'videogames', name: 'Videojuegos & Consolas', category: 'videogame', icon: Gamepad2, color: '#10b981', desc: 'Nintendo Switch, PS5, Xbox Series & Retro' },
+            { id: 'accessories', name: 'Accesorios & Protección', category: 'accessory', icon: ShieldCheck, color: '#6366f1', desc: 'Sleeves Dragon Shield, Toploaders, Carpetas' },
+            { id: 'deals', name: 'Liquidaciones & Ofertas', category: 'deals', icon: Tag, color: '#ec4899', desc: 'Garantía de precio por debajo de TCGplayer', badge: 'OFERTAS' }
+          ].map(hub => {
+            const Icon = hub.icon;
+            const isCurrent = (hub.type && hub.type === activeGame) || (hub.id === 'pokemon' && activeGame === 'POKEMON');
+            return (
+              <div
+                key={hub.id}
+                onClick={() => {
+                  if (hub.type) {
+                    onGameChange?.(hub.type);
+                    onExploreClick();
+                  } else if (hub.category) {
+                    onExploreCategory(hub.category);
+                  }
+                }}
+                className="glass"
+                style={{
+                  padding: '20px',
+                  borderRadius: '14px',
+                  border: isCurrent ? `1.5px solid ${hub.color}` : '1px solid rgba(255, 255, 255, 0.08)',
+                  backgroundColor: isCurrent ? 'rgba(255, 255, 255, 0.06)' : 'rgba(18, 22, 34, 0.6)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'all 0.2s ease',
+                  boxShadow: isCurrent ? `0 8px 24px ${hub.color}25` : 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.borderColor = hub.color;
+                  e.currentTarget.style.boxShadow = `0 10px 28px ${hub.color}30`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = isCurrent ? hub.color : 'rgba(255, 255, 255, 0.08)';
+                  e.currentTarget.style.boxShadow = isCurrent ? `0 8px 24px ${hub.color}25` : 'none';
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    backgroundColor: `${hub.color}18`,
+                    border: `1.5px solid ${hub.color}50`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: hub.color
+                  }}>
+                    <Icon size={20} />
+                  </div>
+                  {hub.badge && (
+                    <span style={{
+                      fontSize: '9.5px',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      backgroundColor: `${hub.color}25`,
+                      color: hub.color,
+                      fontWeight: 800,
+                      letterSpacing: '0.05em'
+                    }}>
+                      {hub.badge}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#fff', margin: '0 0 4px 0', fontFamily: 'var(--font-heading)' }}>
+                    {hub.name}
+                  </h3>
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                    {hub.desc}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', fontWeight: 700, color: hub.color, marginTop: 'auto' }}>
+                  <span>Explorar</span>
+                  <ChevronRight size={13} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 3. PRODUCTO RECOMENDADO DESTACADO (Holographic tilt card) */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '15px' }}>
           <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em' }}>Recomendación de la Semana</span>

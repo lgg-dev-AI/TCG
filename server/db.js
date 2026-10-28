@@ -175,8 +175,10 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         parent_id TEXT DEFAULT NULL,
         icon TEXT DEFAULT 'Package',
         color TEXT DEFAULT '#3b82f6',
-        order_index INTEGER DEFAULT 0
+        order_index INTEGER DEFAULT 0,
+        is_content_bar INTEGER DEFAULT 1
       )`);
+      db.run(`ALTER TABLE categories ADD COLUMN is_content_bar INTEGER DEFAULT 1`, () => {});
 
       // Seedar categorías iniciales si la tabla está vacía
       db.get('SELECT COUNT(*) as count FROM categories', (err, row) => {

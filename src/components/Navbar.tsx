@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { ShoppingCart, Search, Menu, X, RefreshCw, Store, User, LogOut, Shield, Home as HomeIcon } from 'lucide-react';
+import ContentBar from './ContentBar';
+import type { CategoryItem } from '../api';
 
 interface NavbarProps {
   cartCount: number;
@@ -14,6 +16,10 @@ interface NavbarProps {
   onLogout: () => void;
   activeGame: string;
   onGameChange: (game: string) => void;
+  categories?: CategoryItem[];
+  onSelectCategory?: (category: string) => void;
+  onSelectDeals?: () => void;
+  onConfigureBar?: () => void;
 }
 
 export default function Navbar({
@@ -29,6 +35,10 @@ export default function Navbar({
   onLogout,
   activeGame,
   onGameChange,
+  categories,
+  onSelectCategory,
+  onSelectDeals,
+  onConfigureBar,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -361,6 +371,17 @@ export default function Navbar({
           </button>
         </div>
       </div>
+
+      {/* Barra de Contenido / Juegos Estilo TCGplayer */}
+      <ContentBar
+        activeGame={activeGame}
+        onGameChange={onGameChange}
+        onSelectCategory={onSelectCategory}
+        onSelectDeals={onSelectDeals}
+        customCategories={categories}
+        isAdmin={isAdmin}
+        onConfigureBar={onConfigureBar}
+      />
 
       {/* Menú Desplegable Móvil */}
       {mobileMenuOpen && (

@@ -184,7 +184,13 @@ export default function ProductCatalog({
 
   useEffect(() => {
     if (initialCategory) {
-      setSelectedCategory(initialCategory);
+      if (initialCategory === 'deals') {
+        setSelectedCategory('all');
+        setOnlyDealsFilter(true);
+      } else {
+        setSelectedCategory(initialCategory);
+        setOnlyDealsFilter(false);
+      }
     }
   }, [initialCategory]);
   const [selectedType, setSelectedType] = useState<string>('all');
