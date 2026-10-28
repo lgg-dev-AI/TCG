@@ -9,6 +9,7 @@ import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
 import { multiTcgSearch, fetchPokemonExpansionsForCard, fetchCardPricingDetail, type CardSearchResult } from '../services/multiTcgApi';
 import { TCG_EXPANSIONS } from '../data/tcgExpansions';
+import { ALL_POKEMON_NAMES } from '../data/pokemonNames';
 import { apiGetAdminLogs, apiGetCategories, type CategoryItem } from '../api';
 import { compressImage } from '../utils/imageCompressor';
 import CategoryManager from './CategoryManager';
@@ -180,9 +181,23 @@ export default function AdminPanel({
   const [apiSearchError, setApiSearchError] = useState<string | null>(null);
   const [dynamicExpansions, setDynamicExpansions] = useState<string[]>([]);
   const [loadingExpansions, setLoadingExpansions] = useState(false);
+  const [showPokemonSuggestions, setShowPokemonSuggestions] = useState(false);
+
+  // Autocomplete instantáneo A-Z de nombres de Pokémon
+  const filteredPokemonNames = React.useMemo(() => {
+    if (newProdGameType !== 'POKEMON' || !apiSearchQuery.trim()) return [];
+    const q = apiSearchQuery.trim().toLowerCase();
+    const startsWith = ALL_POKEMON_NAMES.filter(name => name.toLowerCase().startsWith(q));
+    const includes = ALL_POKEMON_NAMES.filter(name => !name.toLowerCase().startsWith(q) && name.toLowerCase().includes(q));
+    return [...startsWith, ...includes].slice(0, 35);
+  }, [apiSearchQuery, newProdGameType]);
 
   // Filtrar dinámicamente las expansiones cuando se escribe el nombre de un Pokémon
   useEffect(() => {
+    if (newProdGameType !== 'POKEMON') {
+      setDynamicExpansions([]);
+      return;
+    }
     const query = apiSearchQuery.trim();
     if (!query || query.length < 2) {
       setDynamicExpansions([]);
@@ -194,10 +209,10 @@ export default function AdminPanel({
       const sets = await fetchPokemonExpansionsForCard(query);
       setDynamicExpansions(sets);
       setLoadingExpansions(false);
-    }, 400);
+    }, 250);
 
     return () => clearTimeout(timer);
-  }, [apiSearchQuery]);
+  }, [apiSearchQuery, newProdGameType]);
 
   // States for CSV Catalog Import
   const [showCsvImport, setShowCsvImport] = useState(false);
@@ -347,6 +362,7 @@ export default function AdminPanel({
   const [editProdMarketPrice, setEditProdMarketPrice] = useState<number>(0);
   const [editProdMarketPriceLow, setEditProdMarketPriceLow] = useState<number>(0);
   const [editProdMarketPriceHigh, setEditProdMarketPriceHigh] = useState<number>(0);
+  const [editProdGalleryImages, setEditProdGalleryImages] = useState<string[]>([]);
 
 
   // Helper to handle local file upload to Base64 with automatic WebP compression
@@ -528,26 +544,26 @@ export default function AdminPanel({
   const startEditing = (p: Product) => {
     setEditingProduct(p);
     setEditProdName(p.name);
-    setEditProdPrice(p.price);
+    setEditProdPrice(Math.round(p.price || 0));
     setEditProdCategory(p.category);
     
     // Detect if image is Base64 data URL
-    if (p.image.startsWith('data:image/')) {
+    if (p.image && p.image.startsWith('data:image/')) {
       setEditProdFileBase64(p.image);
-      setEditProdFileName('imagen_subida.png');
+      setEditProdFileName('imagen_guardada.png');
       setEditProdImage('');
     } else {
-      setEditProdImage(p.image);
+      setEditProdImage(p.image || '');
       setEditProdFileBase64('');
       setEditProdFileName('');
     }
     
     setEditProdDesc(p.description || '');
     setEditProdStock(p.stock);
-    setEditProdExpansion(p.expansion || '');
+    setEditProdExpansion(p.expansion || p.pulledFrom || '');
     setEditProdIsPromo(!!p.isPromo);
     setEditProdRegion(p.region || 'Inglés (USA)');
-    setEditProdPulledFrom(p.pulledFrom || '');
+    setEditProdPulledFrom(p.pulledFrom || p.expansion || '');
     setEditProdCardCondition(p.cardCondition || 'NM');
     setEditProdGameType(p.gameType || 'POKEMON');
     setEditProdPlatform(p.platform || 'Nintendo Switch');
@@ -555,9 +571,15 @@ export default function AdminPanel({
     setEditProdIsTournamentStaple(!!p.isTournamentStaple);
     setEditProdIsFirstEdition(!!p.isFirstEdition);
     setEditProdSubCategory(p.subCategory || '');
-    setEditProdMarketPrice(p.marketPrice || 0);
-    setEditProdMarketPriceLow(p.marketPriceLow || 0);
-    setEditProdMarketPriceHigh(p.marketPriceHigh || 0);
+    setEditProdMarketPrice(Math.round(p.marketPrice || 0));
+    setEditProdMarketPriceLow(Math.round(p.marketPriceLow || 0));
+    setEditProdMarketPriceHigh(Math.round(p.marketPriceHigh || 0));
+
+    // Cargar fotos adicionales reales de la galería (excluyendo la portada si ya está duplicada)
+    const existingGallery = (p.galleryImages && p.galleryImages.length > 1)
+      ? p.galleryImages.slice(1)
+      : [];
+    setEditProdGalleryImages(existingGallery);
   };
 
   // Save edited product
@@ -565,26 +587,17 @@ export default function AdminPanel({
     e.preventDefault();
     if (!editingProduct) return;
 
-    let finalImage = '';
-    if (editProdCategory === 'accessory' || editProdCategory === 'videogame') {
-      finalImage = editProdFileBase64 || editProdImage.trim() || 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg';
-      if (!finalImage && editProdCategory === 'accessory') {
-        alert("Por favor sube una foto del accesorio.");
-        return;
-      }
-    } else if (editProdCategory === 'single') {
-      finalImage = editProdImage.trim() || '/generic_card.png';
-    } else if (editProdCategory === 'booster_box') {
-      finalImage = '/official_booster_box.png';
-    } else if (editProdCategory === 'etb') {
-      finalImage = '/official_etb.png';
-    } else if (editProdCategory === 'blister') {
-      finalImage = '/official_blister.png';
-    } else {
-      finalImage = '/generic_card.png';
+    let finalImage = editProdFileBase64 || editProdImage.trim() || editingProduct.image;
+    if (!finalImage) {
+      if (editProdCategory === 'single') finalImage = '/generic_card.png';
+      else if (editProdCategory === 'booster_box') finalImage = '/official_booster_box.png';
+      else if (editProdCategory === 'etb') finalImage = '/official_etb.png';
+      else if (editProdCategory === 'blister') finalImage = '/official_blister.png';
+      else if (editProdCategory === 'accessory' || editProdCategory === 'videogame') finalImage = 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg';
+      else finalImage = '/generic_card.png';
     }
 
-    if (!editProdName) {
+    if (!editProdName.trim()) {
       alert("Por favor ingresa el nombre del producto.");
       return;
     }
@@ -597,9 +610,11 @@ export default function AdminPanel({
       return;
     }
 
+    const updatedGallery = [finalImage, ...editProdGalleryImages].filter(Boolean).slice(0, 6);
+
     onUpdateInventoryItem(editingProduct.id, {
       name: editProdName.trim(),
-      price: Number(editProdPrice),
+      price: Math.round(Number(editProdPrice)),
       category: editProdCategory,
       image: finalImage,
       description: editProdDesc.trim(),
@@ -607,7 +622,7 @@ export default function AdminPanel({
       expansion: editProdExpansion.trim() || undefined,
       isPromo: editProdIsPromo,
       region: editProdCategory === 'single' ? editProdRegion : '',
-      pulledFrom: editProdCategory === 'single' ? editProdPulledFrom : '',
+      pulledFrom: editProdCategory === 'single' ? (editProdPulledFrom || editProdExpansion) : '',
       cardCondition: editProdCategory === 'single' ? editProdCardCondition : '',
       gameType: editProdCategory === 'single' ? editProdGameType : 'POKEMON',
       platform: editProdCategory === 'videogame' ? editProdPlatform : undefined,
@@ -615,22 +630,29 @@ export default function AdminPanel({
       isTournamentStaple: editProdIsTournamentStaple,
       isFirstEdition: editProdCategory === 'single' ? editProdIsFirstEdition : false,
       subCategory: editProdSubCategory.trim() || undefined,
-      marketPrice: editProdMarketPrice > 0 ? editProdMarketPrice : undefined,
-      marketPriceLow: editProdMarketPriceLow > 0 ? editProdMarketPriceLow : undefined,
-      marketPriceHigh: editProdMarketPriceHigh > 0 ? editProdMarketPriceHigh : undefined,
-      galleryImages: editingProduct.galleryImages
+      marketPrice: editProdMarketPrice > 0 ? Math.round(editProdMarketPrice) : undefined,
+      marketPriceLow: editProdMarketPriceLow > 0 ? Math.round(editProdMarketPriceLow) : undefined,
+      marketPriceHigh: editProdMarketPriceHigh > 0 ? Math.round(editProdMarketPriceHigh) : undefined,
+      pokemonCardData: editingProduct.pokemonCardData, // PRESERVAR DATA OFICIAL DE POKÉMON
+      galleryImages: updatedGallery // PRESERVAR Y ACTUALIZAR GALERÍA COMPLETA
     });
 
     setEditingProduct(null);
     setEditProdFileBase64('');
     setEditProdFileName('');
+    setEditProdGalleryImages([]);
   };
 
   // TCG API card search logic
-  const handleCardApiSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCardApiSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!apiSearchQuery.trim() && !newProdPulledFrom) {
+      setApiSearchError('Escribe el nombre de la carta o selecciona una expansión para buscar.');
+      return;
+    }
     setSearchingCards(true);
     setApiSearchError(null);
+    setShowPokemonSuggestions(false);
     try {
       const result = await multiTcgSearch(apiSearchQuery, newProdGameType, newProdPulledFrom);
       setApiSearchResults(result);
@@ -648,28 +670,33 @@ export default function AdminPanel({
   const handleSelectApiCard = async (card: CardSearchResult) => {
     setNewProdName(card.name);
     setNewProdImage(card.images?.large || card.images?.small || '');
-    setNewProdExpansion(card.set?.name || '');
-    setNewProdDesc(`Carta oficial de ${newProdGameType}.`);
+    const detectedSet = card.set?.name || '';
+    setNewProdExpansion(detectedSet);
+    setNewProdPulledFrom(detectedSet);
+    setNewProdGameType(card.game_type || newProdGameType);
+    setNewProdDesc(`Carta oficial de ${card.game_type || newProdGameType}.`);
     
-    let initialPrice = card.marketPrice || 50;
+    let initialPrice = Math.round(card.marketPrice || 50);
     setNewProdPrice(initialPrice);
     setNewProdMarketPrice(initialPrice);
     setNewProdMarketPriceLow(Math.round(initialPrice * 0.8));
     setNewProdMarketPriceHigh(Math.round(initialPrice * 1.4));
     
-    // Clear results
+    // Clear results & dropdown
     setApiSearchResults([]);
+    setShowPokemonSuggestions(false);
 
     // Consultar precios de mercado en vivo
     if (card.game_type === 'POKEMON' && card.id) {
       setMarketPriceNotice('⏳ Consultando cotización de mercado en vivo...');
       const detail = await fetchCardPricingDetail(card.id);
       if (detail && detail.marketPrice > 0) {
-        setNewProdMarketPrice(detail.marketPrice);
-        setNewProdMarketPriceLow(detail.marketPriceLow);
-        setNewProdMarketPriceHigh(detail.marketPriceHigh);
-        setNewProdPrice(detail.marketPrice);
-        setMarketPriceNotice(`✅ Cotización de mercado: $${detail.marketUsd.toFixed(2)} USD (~$${detail.marketPrice.toLocaleString('es-MX')} MXN). Precios de referencia auto-llenados.`);
+        const p = Math.round(detail.marketPrice);
+        setNewProdMarketPrice(p);
+        setNewProdMarketPriceLow(Math.round(detail.marketPriceLow));
+        setNewProdMarketPriceHigh(Math.round(detail.marketPriceHigh));
+        setNewProdPrice(p);
+        setMarketPriceNotice(`✅ Cotización de mercado: $${detail.marketUsd.toFixed(2)} USD (~$${p.toLocaleString('es-MX')} MXN). Precios de referencia auto-llenados.`);
       } else {
         setMarketPriceNotice(null);
       }
@@ -1374,54 +1401,166 @@ export default function AdminPanel({
               </h4>
 
               {/* Buscador de Cartas Oficiales */}
+              {/* Buscador de Cartas Oficiales */}
               {newProdCategory === 'single' && (
                 <div style={{
                   marginBottom: '20px',
                   padding: '16px',
                   backgroundColor: 'rgba(255, 255, 255, 0.02)',
                   border: '1px dashed var(--border-color)',
-                  borderRadius: '10px'
+                  borderRadius: '10px',
+                  position: 'relative'
                 }}>
-                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--secondary)', marginBottom: '8px' }}>
-                    🔍 Buscador de Cartas de Pokémon TCG (Importación Automática)
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr auto', gap: '10px', alignItems: 'center' }}>
-                    {/* Selector de Sobre de Origen / Expansión (Dinámico A-Z) */}
-                    <select
-                      value={newProdPulledFrom}
-                      onChange={(e) => {
-                        setNewProdPulledFrom(e.target.value);
-                        if (e.target.value) {
-                          setNewProdExpansion(e.target.value);
-                        }
-                      }}
-                      style={{ ...getFormInputStyle(), padding: '10px 12px' }}
-                    >
-                      <option value="">
-                        {loadingExpansions 
-                          ? '⏳ Buscando expansiones...' 
-                          : dynamicExpansions.length > 0 
-                            ? `🌐 Todas las Expansiones de "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
-                            : '🌐 Todas las Expansiones (Todas)'}
-                      </option>
-                      {(dynamicExpansions.length > 0 ? dynamicExpansions : TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
-                        <option key={exp} value={exp}>{exp}</option>
-                      ))}
-                    </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#ffcb05', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Search size={15} />
+                      Buscador e Importador de Cartas TCG Oficiales
+                    </label>
 
-                    {/* Input de Nombre (Opcional si se seleccionó sobre) */}
-                    <input
-                      type="text"
-                      placeholder="Nombre de carta (ej: Charizard, Pikachu...) o deja vacío para ver el sobre..."
-                      value={apiSearchQuery}
-                      onChange={(e) => setApiSearchQuery(e.target.value)}
-                      style={{ ...getFormInputStyle() }}
-                    />
+                    {/* Selector de Juego / TCG en el Buscador */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Juego TCG:</span>
+                      <select
+                        value={newProdGameType}
+                        onChange={(e) => {
+                          const gt = e.target.value;
+                          setNewProdGameType(gt);
+                          setApiSearchResults([]);
+                          setApiSearchError(null);
+                          setShowPokemonSuggestions(false);
+                        }}
+                        style={{
+                          backgroundColor: 'rgba(255,255,255,0.06)',
+                          border: '1px solid var(--border-color)',
+                          color: '#fff',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="POKEMON">⚡ Pokémon TCG</option>
+                        <option value="YUGIOH">⚔️ Yu-Gi-Oh!</option>
+                        <option value="MAGIC">🧙 Magic: The Gathering</option>
+                        <option value="ONEPIECE">🏴‍☠️ One Piece Card Game</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: newProdGameType === 'POKEMON' ? '280px 1fr auto' : '1fr auto', gap: '10px', alignItems: 'center', position: 'relative' }}>
+                    {/* Selector de Sobre de Origen / Expansión (Solo Pokémon muestra expansiones dinámicas) */}
+                    {newProdGameType === 'POKEMON' && (
+                      <select
+                        value={newProdPulledFrom}
+                        onChange={(e) => {
+                          setNewProdPulledFrom(e.target.value);
+                          if (e.target.value) {
+                            setNewProdExpansion(e.target.value);
+                          }
+                        }}
+                        style={{ ...getFormInputStyle(), padding: '10px 12px' }}
+                      >
+                        <option value="">
+                          {loadingExpansions 
+                            ? '⏳ Buscando expansiones...' 
+                            : dynamicExpansions.length > 0 
+                              ? `🌐 Todas las Expansiones de "${apiSearchQuery.trim()}" (${dynamicExpansions.length})` 
+                              : '🌐 Todas las Expansiones (Todas)'}
+                        </option>
+                        {(dynamicExpansions.length > 0 ? dynamicExpansions : TCG_EXPANSIONS['POKEMON'] || []).map((exp) => (
+                          <option key={exp} value={exp}>{exp}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Input de Nombre con Combobox / Autocomplete de Pokémon */}
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <input
+                        type="text"
+                        placeholder={
+                          newProdGameType === 'POKEMON'
+                            ? "Escribe el Pokémon (ej: Absol, Rayquaza, Charizard... A-Z)..."
+                            : newProdGameType === 'YUGIOH'
+                            ? "Nombre de carta Yu-Gi-Oh! (ej: Blue-Eyes, Dark Magician)..."
+                            : newProdGameType === 'MAGIC'
+                            ? "Nombre de carta Magic (ej: Black Lotus, Sol Ring, Lightning Bolt)..."
+                            : "Nombre de carta One Piece (ej: Luffy, Zoro, Shanks, Nami)..."
+                        }
+                        value={apiSearchQuery}
+                        onChange={(e) => {
+                          setApiSearchQuery(e.target.value);
+                          setShowPokemonSuggestions(newProdGameType === 'POKEMON' && e.target.value.trim().length > 0);
+                        }}
+                        onFocus={() => {
+                          if (newProdGameType === 'POKEMON' && apiSearchQuery.trim().length > 0) {
+                            setShowPokemonSuggestions(true);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            setShowPokemonSuggestions(false);
+                            handleCardApiSearch();
+                          }
+                        }}
+                        style={{ ...getFormInputStyle(), width: '100%' }}
+                      />
+
+                      {/* Dropdown flotante Combobox Pokémon A-Z */}
+                      {showPokemonSuggestions && filteredPokemonNames.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          backgroundColor: '#161b26',
+                          border: '1px solid #ffcb05',
+                          borderRadius: '8px',
+                          marginTop: '4px',
+                          maxHeight: '220px',
+                          overflowY: 'auto',
+                          zIndex: 50,
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.85)'
+                        }}>
+                          <div style={{ padding: '6px 10px', fontSize: '10px', fontWeight: 800, color: '#ffcb05', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,203,5,0.06)' }}>
+                            Sugerencias de Pokémon ({filteredPokemonNames.length} encontrados)
+                          </div>
+                          {filteredPokemonNames.map((pkName) => (
+                            <div
+                              key={pkName}
+                              onClick={() => {
+                                setApiSearchQuery(pkName);
+                                setShowPokemonSuggestions(false);
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                fontSize: '12px',
+                                color: '#fff',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(255, 203, 5, 0.15)';
+                                e.currentTarget.style.color = '#ffcb05';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = '#fff';
+                              }}
+                            >
+                              ⭐ <strong>{pkName}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Botón Buscar */}
                     <button
                       type="button"
-                      onClick={handleCardApiSearch}
+                      onClick={() => handleCardApiSearch()}
                       disabled={searchingCards}
                       className="btn btn-secondary"
                       style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
@@ -1431,7 +1570,7 @@ export default function AdminPanel({
                       ) : (
                         <Search size={16} />
                       )}
-                      Buscar
+                      <span>{searchingCards ? 'Buscando...' : 'Buscar'}</span>
                     </button>
                   </div>
 
@@ -1502,7 +1641,7 @@ export default function AdminPanel({
                 </div>
               )}
 
-              {/* Aviso dinámico de cotización TCGplayer */}
+              {/* Aviso dinámico de cotización */}
               {marketPriceNotice && (
                 <div style={{
                   padding: '10px 14px',
@@ -1572,13 +1711,14 @@ export default function AdminPanel({
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Precio de Venta PokéVault (MXN) *</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Precio de Venta PokéVault (MXN, sin centavos) *</label>
                   <input
                     type="number"
                     min={1}
+                    step="1"
                     required
                     value={newProdPrice}
-                    onChange={(e) => setNewProdPrice(Number(e.target.value))}
+                    onChange={(e) => setNewProdPrice(Math.round(Number(e.target.value)))}
                     style={getFormInputStyle()}
                   />
                 </div>
@@ -1587,11 +1727,37 @@ export default function AdminPanel({
                   <input
                     type="number"
                     min={0}
+                    step="1"
                     required
                     value={newProdStock}
-                    onChange={(e) => setNewProdStock(Number(e.target.value))}
+                    onChange={(e) => setNewProdStock(Math.round(Number(e.target.value)))}
                     style={getFormInputStyle()}
                   />
+                </div>
+
+                {/* Destacar en catálogo principal arriba como solicitó el usuario */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: 'rgba(255, 203, 5, 0.08)',
+                  border: '1px solid rgba(255, 203, 5, 0.3)',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  height: 'fit-content',
+                  alignSelf: 'flex-end',
+                  marginBottom: '2px'
+                }}>
+                  <input
+                    type="checkbox"
+                    id="isPromoTop"
+                    checked={newProdIsPromo}
+                    onChange={(e) => setNewProdIsPromo(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#ffcb05', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="isPromoTop" style={{ fontSize: '12.5px', color: '#ffcb05', fontWeight: 700, cursor: 'pointer' }}>
+                    ⭐ Destacar en catálogo principal
+                  </label>
                 </div>
               </div>
 
@@ -2007,32 +2173,19 @@ export default function AdminPanel({
                 </div>
               </div>
 
-              {/* Fila de Detalles Adicionales (Expansión y Destacado) */}
+              {/* Fila de Expansión */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
                 marginBottom: '16px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Expansión (Opcional)</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Expansión / Set (Auto-detectada o Personalizada)</label>
                   <input
                     type="text"
-                    placeholder="e.g. Twilight Masquerade"
+                    placeholder="e.g. Twilight Masquerade, Evolving Skies..."
                     value={newProdExpansion}
                     onChange={(e) => setNewProdExpansion(e.target.value)}
                     style={getFormInputStyle()}
                   />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '24px' }}>
-                  <input
-                    type="checkbox"
-                    id="isPromo"
-                    checked={newProdIsPromo}
-                    onChange={(e) => setNewProdIsPromo(e.target.checked)}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="isPromo" style={{ fontSize: '13px', color: 'white', cursor: 'pointer' }}>Destacar en catálogo principal</label>
                 </div>
               </div>
 
@@ -3856,7 +4009,7 @@ export default function AdminPanel({
                 gap: '16px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Nombre del Producto</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Nombre del Producto *</label>
                   <input
                     type="text"
                     required
@@ -3866,7 +4019,7 @@ export default function AdminPanel({
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Categoría</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Categoría *</label>
                   <select
                     value={editProdCategory}
                     onChange={(e) => setEditProdCategory(e.target.value as Product['category'])}
@@ -3880,14 +4033,33 @@ export default function AdminPanel({
                     <option value="videogame">🎮 Videojuego / Consola</option>
                   </select>
                 </div>
+
+                {/* Subcategoría Dinámica en Edición */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Precio (MXN)</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Subcategoría (Opcional)</label>
+                  <select
+                    value={editProdSubCategory}
+                    onChange={(e) => setEditProdSubCategory(e.target.value)}
+                    style={getFormInputStyle()}
+                  >
+                    <option value="">Sin subcategoría específica</option>
+                    {categoriesList.filter(c => c.parent_id).map(sub => (
+                      <option key={sub.id} value={sub.slug}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Precio (MXN, sin centavos) *</label>
                   <input
                     type="number"
                     min={1}
+                    step="1"
                     required
                     value={editProdPrice}
-                    onChange={(e) => setEditProdPrice(Number(e.target.value))}
+                    onChange={(e) => setEditProdPrice(Math.round(Number(e.target.value)))}
                     style={getFormInputStyle()}
                   />
                 </div>
@@ -3896,11 +4068,37 @@ export default function AdminPanel({
                   <input
                     type="number"
                     min={0}
+                    step="1"
                     required
                     value={editProdStock}
-                    onChange={(e) => setEditProdStock(Number(e.target.value))}
+                    onChange={(e) => setEditProdStock(Math.round(Number(e.target.value)))}
                     style={getFormInputStyle()}
                   />
+                </div>
+
+                {/* Destacar en catálogo principal arriba */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: 'rgba(255, 203, 5, 0.08)',
+                  border: '1px solid rgba(255, 203, 5, 0.3)',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  height: 'fit-content',
+                  alignSelf: 'flex-end',
+                  marginBottom: '2px'
+                }}>
+                  <input
+                    type="checkbox"
+                    id="editIsPromoTop"
+                    checked={editProdIsPromo}
+                    onChange={(e) => setEditProdIsPromo(e.target.checked)}
+                    style={{ width: '18px', height: '18px', accentColor: '#ffcb05', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="editIsPromoTop" style={{ fontSize: '12.5px', color: '#ffcb05', fontWeight: 700, cursor: 'pointer' }}>
+                    ⭐ Destacar en catálogo principal
+                  </label>
                 </div>
               </div>
 
@@ -4114,64 +4312,153 @@ export default function AdminPanel({
                 </div>
               )}
 
-              {/* Preview de Imagen Asignada */}
-              {(editProdImage || editProdCategory) && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '16px',
-                  padding: '12px',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  width: 'fit-content'
-                }}>
+              {/* Preview y Cambio de Foto Principal */}
+              <div style={{
+                marginBottom: '16px',
+                padding: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px'
+              }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'white', marginBottom: '10px' }}>
+                  🖼️ Foto Principal del Producto / Portada
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                   <img
-                    src={
-                      editProdCategory === 'single'
-                        ? (editProdImage || '/generic_card.png')
-                        : editProdCategory === 'booster_box'
-                        ? '/official_booster_box.png'
-                        : editProdCategory === 'etb'
-                        ? '/official_etb.png'
-                        : editProdCategory === 'blister'
-                        ? '/official_blister.png'
-                        : editProdCategory === 'accessory'
-                        ? (editProdFileBase64 || editProdImage || '/generic_etb.png')
-                        : editProdCategory === 'videogame'
-                        ? (editProdFileBase64 || editProdImage || 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg')
-                        : '/generic_card.png'
-                    }
+                    src={editProdFileBase64 || editProdImage || editingProduct.image || '/generic_card.png'}
                     alt="Vista previa"
-                    style={{ height: '70px', width: '70px', objectFit: 'contain', borderRadius: '4px', backgroundColor: 'rgba(0,0,0,0.2)' }}
+                    style={{ height: '90px', width: '70px', objectFit: 'contain', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}
                   />
-                  <div>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'white', display: 'block' }}>
-                      Imagen Asignada
+                  <div style={{ flex: 1, minWidth: '220px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {editProdFileBase64 ? '✓ Nueva foto lista para guardar' : editProdImage ? 'Foto asignada' : 'Foto actual guardada'}
                     </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                      {editProdCategory === 'single' && editProdImage 
-                        ? 'Cargada desde Pokémon TCG API' 
-                        : (editProdCategory === 'accessory' || editProdCategory === 'videogame') && editProdFileBase64
-                        ? 'Foto subida por el administrador'
-                        : editProdCategory === 'videogame'
-                        ? 'Carátula oficial de videojuego'
-                        : 'Imagen oficial sin copyright de PokéVault'}
-                    </span>
+                    <label style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: 'rgba(255, 203, 5, 0.1)',
+                      border: '1px solid #ffcb05',
+                      color: '#ffcb05',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      width: 'fit-content'
+                    }}>
+                      <Upload size={14} />
+                      <span>Cambiar Foto Principal (Subir Archivo)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleFileChange(e, true)}
+                      />
+                    </label>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Fila de Detalles Adicionales (Expansión y Destacado) */}
+              {/* Galería de Fotos Extras en Edición (Hasta 5 fotos adicionales) */}
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
-                alignItems: 'center'
+                marginBottom: '16px',
+                padding: '16px',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '10px'
               }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 700, color: 'white' }}>
+                    📸 Galería de Integridad del Producto (Fotos Reales Extras)
+                  </label>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {1 + editProdGalleryImages.length} de 6 fotos utilizadas
+                  </span>
+                </div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                  Agrega o elimina fotos detalladas (esquinas, reverso, bordes) para que el comprador verifique el estado físico.
+                </p>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Portada */}
+                  <div style={{ position: 'relative', width: '70px', height: '90px', borderRadius: '6px', border: '2px solid var(--secondary)', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <img 
+                      src={editProdFileBase64 || editProdImage || editingProduct.image || '/generic_card.png'} 
+                      alt="Portada" 
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                    />
+                    <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(255, 203, 5, 0.9)', color: '#000', fontSize: '8px', fontWeight: 800, textAlign: 'center', padding: '1px' }}>
+                      1. PORTADA
+                    </span>
+                  </div>
+
+                  {/* Fotos extras */}
+                  {editProdGalleryImages.map((imgBase64, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: '70px', height: '90px', borderRadius: '6px', border: '1px solid var(--border-color)', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                      <img src={imgBase64} alt={`Foto extra ${idx + 2}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <span style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '8px', textAlign: 'center', padding: '1px' }}>
+                        {idx + 2}. FOTO REAL
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setEditProdGalleryImages(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(255, 62, 62, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Subir foto extra */}
+                  {editProdGalleryImages.length < 5 && (
+                    <label style={{
+                      width: '70px',
+                      height: '90px',
+                      borderRadius: '6px',
+                      border: '1px dashed var(--border-color)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255,255,255,0.02)',
+                      transition: 'all 0.2s',
+                      gap: '4px'
+                    }}>
+                      <Upload size={16} color="var(--secondary)" />
+                      <span style={{ fontSize: '9px', color: 'var(--secondary)', textAlign: 'center', fontWeight: 600 }}>+ Subir Foto</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const compressed = await compressImage(file, 1200, 0.82);
+                            setEditProdGalleryImages(prev => [...prev, compressed].slice(0, 5));
+                          } catch (err) {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result === 'string') {
+                                setEditProdGalleryImages(prev => [...prev, reader.result as string].slice(0, 5));
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Fila de Expansión */}
+              <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Expansión (Opcional)</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Expansión / Set</label>
                   <input
                     type="text"
                     value={editProdExpansion}
@@ -4179,17 +4466,26 @@ export default function AdminPanel({
                     style={getFormInputStyle()}
                   />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '24px' }}>
-                  <input
-                    type="checkbox"
-                    id="editIsPromo"
-                    checked={editProdIsPromo}
-                    onChange={(e) => setEditProdIsPromo(e.target.checked)}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="editIsPromo" style={{ fontSize: '13px', color: 'white', cursor: 'pointer' }}>Destacar en catálogo principal</label>
-                </div>
               </div>
+
+              {/* Badge si tiene datos oficiales de Pokemon TCG */}
+              {editingProduct.pokemonCardData && (
+                <div style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  fontSize: '11px',
+                  color: '#34d399',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginBottom: '16px'
+                }}>
+                  <Sparkles size={14} color="#34d399" />
+                  <span>Ficha técnica y ataques de Pokémon preservados activamente.</span>
+                </div>
+              )}
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Descripción del Producto</label>
