@@ -1630,8 +1630,19 @@ export default function AdminPanel({
                           }}
                         >
                           <img
-                            src={card.images.small}
+                            src={card.images.small || card.images.large}
                             alt={card.name}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (card.images.large && target.src !== card.images.large) {
+                                target.src = card.images.large;
+                              } else {
+                                target.onerror = null;
+                                target.src = 'https://images.pokemontcg.io/swsh7/218_hires.png';
+                              }
+                            }}
                             style={{ height: '170px', objectFit: 'contain', marginBottom: '8px', borderRadius: '4px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))' }}
                           />
                           <div>

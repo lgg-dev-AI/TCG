@@ -183,14 +183,14 @@ export const fetchCardPricingDetail = async (cardId: string): Promise<{
   }
 };
 
-// Catálogo precargado de One Piece Card Game oficial
+// Catálogo precargado de One Piece Card Game oficial con CDN de alta resolución
 const POPULAR_ONE_PIECE_CARDS: CardSearchResult[] = [
   {
     id: 'OP01-001',
     name: 'Roronoa Zoro (Leader)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-001.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-001.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-001.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-001.jpg'
     },
     set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
     game_type: 'ONEPIECE',
@@ -200,19 +200,41 @@ const POPULAR_ONE_PIECE_CARDS: CardSearchResult[] = [
     id: 'OP01-025',
     name: 'Roronoa Zoro (SR)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-025.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-025.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-025.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-025.jpg'
     },
     set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
     game_type: 'ONEPIECE',
     marketPrice: 620
   },
   {
+    id: 'OP06-118',
+    name: 'Roronoa Zoro (SEC)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP06-118.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP06-118.jpg'
+    },
+    set: { id: 'OP06', name: 'Wings of the Captain (OP-06)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 950
+  },
+  {
+    id: 'OP06-118_p2',
+    name: 'Roronoa Zoro (Manga Alternate Art)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP06-118_p2.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP06-118_p2.jpg'
+    },
+    set: { id: 'OP06', name: 'Wings of the Captain (OP-06)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 21500
+  },
+  {
     id: 'OP01-016',
     name: 'Nami (R)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-016.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-016.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-016.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-016.jpg'
     },
     set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
     game_type: 'ONEPIECE',
@@ -222,19 +244,151 @@ const POPULAR_ONE_PIECE_CARDS: CardSearchResult[] = [
     id: 'OP01-120',
     name: 'Shanks (SEC)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-120.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP01-120.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-120.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-120.jpg'
     },
     set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
     game_type: 'ONEPIECE',
     marketPrice: 1600
   },
   {
+    id: 'OP01-002',
+    name: 'Trafalgar Law (Leader)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-002.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-002.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 320
+  },
+  {
+    id: 'OP01-013',
+    name: 'Sanji (R)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-013.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-013.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 280
+  },
+  {
+    id: 'OP01-015',
+    name: 'Tony Tony.Chopper (UC)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-015.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-015.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 190
+  },
+  {
+    id: 'OP01-017',
+    name: 'Nico Robin (R)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-017.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-017.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 220
+  },
+  {
+    id: 'OP01-024',
+    name: 'Monkey.D.Luffy (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-024.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-024.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 490
+  },
+  {
+    id: 'OP01-047',
+    name: 'Trafalgar Law (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-047.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-047.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 510
+  },
+  {
+    id: 'OP01-060',
+    name: 'Donquixote Doflamingo (Leader)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-060.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-060.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 380
+  },
+  {
+    id: 'OP01-070',
+    name: 'Dracule Mihawk (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-070.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-070.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 420
+  },
+  {
+    id: 'OP01-077',
+    name: 'Perona (UC)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-077.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-077.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 180
+  },
+  {
+    id: 'OP01-078',
+    name: 'Boa Hancock (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-078.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-078.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 650
+  },
+  {
+    id: 'OP01-094',
+    name: 'Kaido (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-094.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-094.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 480
+  },
+  {
+    id: 'OP01-121',
+    name: 'Yamato (SEC)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP01-121.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP01-121.jpg'
+    },
+    set: { id: 'OP01', name: 'Romance Dawn (OP-01)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 1200
+  },
+  {
     id: 'OP02-001',
     name: 'Edward.Newgate (Leader)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP02-001.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP02-001.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP02-001.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP02-001.jpg'
     },
     set: { id: 'OP02', name: 'Paramount War (OP-02)' },
     game_type: 'ONEPIECE',
@@ -244,19 +398,63 @@ const POPULAR_ONE_PIECE_CARDS: CardSearchResult[] = [
     id: 'OP02-013',
     name: 'Portgas.D.Ace (SR)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP02-013.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP02-013.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP02-013.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP02-013.jpg'
     },
     set: { id: 'OP02', name: 'Paramount War (OP-02)' },
     game_type: 'ONEPIECE',
     marketPrice: 580
   },
   {
+    id: 'OP02-026',
+    name: 'Sanji (Leader)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP02-026.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP02-026.jpg'
+    },
+    set: { id: 'OP02', name: 'Paramount War (OP-02)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 320
+  },
+  {
+    id: 'OP03-040',
+    name: 'Nami (Leader)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP03-040.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP03-040.jpg'
+    },
+    set: { id: 'OP03', name: 'Pillars of Strength (OP-03)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 420
+  },
+  {
+    id: 'OP03-122',
+    name: 'Sogeking (SEC)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP03-122.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP03-122.jpg'
+    },
+    set: { id: 'OP03', name: 'Pillars of Strength (OP-03)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 1450
+  },
+  {
+    id: 'OP04-083',
+    name: 'Sabo (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP04-083.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP04-083.jpg'
+    },
+    set: { id: 'OP04', name: 'Kingdoms of Intrigue (OP-04)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 380
+  },
+  {
     id: 'OP05-060',
     name: 'Monkey.D.Luffy (Gear 5 - SEC)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP05-060.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP05-060.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP05-060.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP05-060.jpg'
     },
     set: { id: 'OP05', name: 'Awakening of the New Era (OP-05)' },
     game_type: 'ONEPIECE',
@@ -266,23 +464,56 @@ const POPULAR_ONE_PIECE_CARDS: CardSearchResult[] = [
     id: 'OP05-119',
     name: 'Monkey.D.Luffy (Manga Rare)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP05-119.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP05-119.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP05-119.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP05-119.jpg'
     },
     set: { id: 'OP05', name: 'Awakening of the New Era (OP-05)' },
     game_type: 'ONEPIECE',
-    marketPrice: 12500
+    marketPrice: 35000
   },
   {
-    id: 'OP06-118',
-    name: 'Roronoa Zoro (SEC)',
+    id: 'OP06-022',
+    name: 'Yamato (Leader)',
     images: {
-      small: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP06-118.png',
-      large: 'https://en.onepiece-cardgame.com/images/cardlist/card/OP06-118.png'
+      small: 'https://optcgapi.com/media/static/Card_Images/OP06-022.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP06-022.jpg'
     },
     set: { id: 'OP06', name: 'Wings of the Captain (OP-06)' },
     game_type: 'ONEPIECE',
-    marketPrice: 950
+    marketPrice: 490
+  },
+  {
+    id: 'OP07-109',
+    name: 'Monkey.D.Luffy (Leader)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/OP07-109.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/OP07-109.jpg'
+    },
+    set: { id: 'OP07', name: '500 Years in the Future (OP-07)' },
+    game_type: 'ONEPIECE',
+    marketPrice: 550
+  },
+  {
+    id: 'ST01-001',
+    name: 'Monkey.D.Luffy (Leader)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/ST01-001.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/ST01-001.jpg'
+    },
+    set: { id: 'ST01', name: 'Straw Hat Crew Starter Deck' },
+    game_type: 'ONEPIECE',
+    marketPrice: 300
+  },
+  {
+    id: 'ST01-012',
+    name: 'Roronoa Zoro (SR)',
+    images: {
+      small: 'https://optcgapi.com/media/static/Card_Images/ST01-012.jpg',
+      large: 'https://optcgapi.com/media/static/Card_Images/ST01-012.jpg'
+    },
+    set: { id: 'ST01', name: 'Straw Hat Crew Starter Deck' },
+    game_type: 'ONEPIECE',
+    marketPrice: 380
   }
 ];
 
@@ -431,7 +662,63 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
       }
 
       case 'ONEPIECE': {
-        // Intentar primero con base de datos interna si existe
+        // 1. Si el usuario ingresa un código de carta (ej. OP01-001, OP05-119, ST01-001)
+        if (cleanName) {
+          try {
+            const cardCodeMatch = cleanName.match(/^([a-zA-Z]{2,3})[-]?([0-9]{2})[-]?([0-9]{3})/i);
+            if (cardCodeMatch) {
+              const formattedCardId = `${cardCodeMatch[1].toUpperCase()}${cardCodeMatch[2]}-${cardCodeMatch[3]}`;
+              const res = await fetch(`https://optcgapi.com/api/sets/card/${formattedCardId}/`);
+              if (res.ok) {
+                const apiData = await res.json();
+                if (Array.isArray(apiData) && apiData.length > 0) {
+                  const mapped: CardSearchResult[] = apiData.map(c => ({
+                    id: c.card_image_id || c.card_set_id,
+                    name: c.card_name,
+                    images: {
+                      small: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`,
+                      large: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`
+                    },
+                    set: { id: c.set_id || 'OP', name: c.set_name || 'One Piece Set' },
+                    game_type: 'ONEPIECE',
+                    marketPrice: Math.round((c.market_price || c.inventory_price || 15) * 20)
+                  }));
+                  setCached(cacheKey, mapped);
+                  return mapped;
+                }
+              }
+            }
+
+            // Si el término coincide con un set (ej. OP-01, OP01, OP-02, OP02, etc.)
+            const setCodeMatch = cleanName.match(/^([a-zA-Z]{2,3})[-]?([0-9]{2})$/i);
+            if (setCodeMatch) {
+              const formattedSetId = `${setCodeMatch[1].toUpperCase()}-${setCodeMatch[2]}`;
+              const res = await fetch(`https://optcgapi.com/api/sets/${formattedSetId}/`);
+              if (res.ok) {
+                const setCards = await res.json();
+                if (Array.isArray(setCards) && setCards.length > 0) {
+                  const mapped: CardSearchResult[] = setCards.slice(0, 60).map(c => ({
+                    id: c.card_image_id || c.card_set_id,
+                    name: c.card_name,
+                    images: {
+                      small: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`,
+                      large: c.card_image || `https://optcgapi.com/media/static/Card_Images/${c.card_image_id || c.card_set_id}.jpg`
+                    },
+                    set: { id: c.set_id || formattedSetId, name: c.set_name || formattedSetId },
+                    game_type: 'ONEPIECE',
+                    marketPrice: Math.round((c.market_price || c.inventory_price || 15) * 20)
+                  }));
+                  setCached(cacheKey, mapped);
+                  return mapped;
+                }
+              }
+            }
+          } catch (apiErr) {
+            console.warn('Error consultando optcgapi live:', apiErr);
+          }
+        }
+
+        // 2. Base de datos interna del backend si está disponible
         try {
           const response = await fetch(`/api/catalog/search?game_type=ONEPIECE&q=${encodeURIComponent(query)}`);
           if (response.ok) {
@@ -451,12 +738,21 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
           }
         } catch {}
 
-        // Fallback a catálogo precargado filtrado
-        const lowerQ = query.toLowerCase();
-        const matches = POPULAR_ONE_PIECE_CARDS.filter(c => 
-          c.name.toLowerCase().includes(lowerQ) || (c.set?.name && c.set.name.toLowerCase().includes(lowerQ))
+        // 3. Fallback a catálogo precargado filtrado con URLs CDN oficiales
+        const lowerQ = cleanName.toLowerCase();
+        let matches = POPULAR_ONE_PIECE_CARDS.filter(c => 
+          c.name.toLowerCase().includes(lowerQ) || 
+          c.id.toLowerCase().includes(lowerQ) || 
+          (c.set?.name && c.set.name.toLowerCase().includes(lowerQ))
         );
-        return matches.length > 0 ? matches : POPULAR_ONE_PIECE_CARDS;
+        if (cleanExpansion) {
+          const lowerExp = cleanExpansion.toLowerCase();
+          matches = matches.filter(c => c.set?.name && c.set.name.toLowerCase().includes(lowerExp));
+        }
+
+        const finalResults = matches.length > 0 ? matches : POPULAR_ONE_PIECE_CARDS;
+        setCached(cacheKey, finalResults);
+        return finalResults;
       }
 
       default:
