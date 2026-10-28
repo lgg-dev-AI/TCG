@@ -651,7 +651,7 @@ export default function App() {
             }}
             onViewProductDetails={setSelectedProduct}
             onAddToCart={handleAddToCart}
-            inventory={inventory.filter(p => p.gameType === activeGame || (activeGame.includes('ONE') && (p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE')) || !p.gameType || (p.gameType === 'POKEMON' && activeGame === 'POKEMON'))}
+            inventory={inventory}
             activeGame={activeGame}
             onGameChange={(game) => {
               navigateTo(`/${game.toLowerCase().replace('_', '')}`, { game });

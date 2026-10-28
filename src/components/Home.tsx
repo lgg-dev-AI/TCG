@@ -36,13 +36,43 @@ export default function Home({
     isPromo: true
   };
 
-  // Cartas más cotizadas y destacadas para el showcase de Home (Opción B)
+  // Cartas más cotizadas y destacadas para el showcase de Home (Multi-TCG equilibrado)
   const featuredShowcaseCards = React.useMemo(() => {
     const singles = inventory.filter(p => p.category === 'single');
-    if (singles.length >= 4) {
-      return [...singles].sort((a, b) => b.price - a.price).slice(0, 8);
+    if (singles.length === 0) return inventory.slice(0, 10);
+
+    const tcgTypes = ['ONE_PIECE', 'MAGIC', 'YUGIOH', 'LORCANA', 'POKEMON'];
+    const selected: Product[] = [];
+    const usedIds = new Set<string>();
+
+    // 1. Obtener las mejores cartas (top 2 por precio) de cada uno de los 5 TCGs
+    tcgTypes.forEach(t => {
+      const gameSingles = singles
+        .filter(s => {
+          if (t === 'ONE_PIECE') return s.gameType === 'ONE_PIECE' || s.gameType === 'ONEPIECE';
+          if (t === 'POKEMON') return s.gameType === 'POKEMON' || !s.gameType;
+          return s.gameType === t;
+        })
+        .sort((a, b) => b.price - a.price);
+
+      gameSingles.slice(0, 2).forEach(card => {
+        if (!usedIds.has(card.id)) {
+          selected.push(card);
+          usedIds.add(card.id);
+        }
+      });
+    });
+
+    // 2. Si faltan cartas para completar al menos 8 o 10, complementar con las más cotizadas
+    if (selected.length < 8) {
+      const remaining = [...singles]
+        .sort((a, b) => b.price - a.price)
+        .filter(c => !usedIds.has(c.id));
+      selected.push(...remaining.slice(0, 8 - selected.length));
     }
-    return inventory.slice(0, 8);
+
+    // Ordenar por valor de colección (precio descendente)
+    return selected.sort((a, b) => b.price - a.price);
   }, [inventory]);
 
   // Referencia para el efecto 3D Holográfico
@@ -100,70 +130,172 @@ export default function Home({
     });
   };
 
-  const singleCards = inventory.filter(p => p.category === 'single');
   const backupSingles: Product[] = [
     {
+      id: 'mock_op1',
+      name: 'Monkey D. Luffy Manga Alt #OP05-119',
+      price: 36000,
+      category: 'single',
+      image: 'https://optcgapi.com/media/static/Card_Images/OP05-119.jpg',
+      description: 'Manga secreta Luffy Gear 5 en Awakening of the New Era. Condición NM.',
+      stock: 1,
+      expansion: 'Awakening of the New Era (OP-05)',
+      region: 'Japón / USA',
+      cardCondition: 'NM',
+      gameType: 'ONE_PIECE'
+    },
+    {
+      id: 'mock_lor1',
+      name: 'Elsa - Spirit of Winter Enchanted #207/204',
+      price: 18500,
+      category: 'single',
+      image: 'https://cards.lorcast.io/card/digital/large/crd_cbc18e77d7ec4d50bf19650a9a559686.png',
+      description: 'Elsa Enchanted Foil de The First Chapter de Disney Lorcana. Condición NM.',
+      stock: 1,
+      expansion: 'The First Chapter',
+      region: 'Inglés (USA)',
+      cardCondition: 'NM',
+      gameType: 'LORCANA'
+    },
+    {
+      id: 'mock_mtg1',
+      name: 'The One Ring Borderless Foil #0451',
+      price: 8900,
+      category: 'single',
+      image: 'https://cards.scryfall.io/large/front/d/e/de225645-1988-4217-a065-27a31b64cf27.jpg',
+      description: 'El Anillo Único Borderless Foil de The Lord of the Rings. Condición NM.',
+      stock: 2,
+      expansion: 'Tales of Middle-earth',
+      region: 'Inglés (USA)',
+      cardCondition: 'NM',
+      gameType: 'MAGIC'
+    },
+    {
+      id: 'mock_ygo1',
+      name: 'Blue-Eyes White Dragon 1st Ed #LOB-001',
+      price: 24500,
+      category: 'single',
+      image: 'https://images.ygoprodeck.com/images/cards/89631139.jpg',
+      description: 'Dragón Blanco de Ojos Azules vintage 1st Edition del 2002. Condición NM.',
+      stock: 1,
+      expansion: 'Legend of Blue Eyes',
+      region: 'Inglés (USA)',
+      cardCondition: 'NM',
+      gameType: 'YUGIOH'
+    },
+    {
       id: 'mock_s1',
-      name: 'Charizard ex (199/165) SIR',
-      price: 2450,
+      name: 'Charizard ex SIR #199/165',
+      price: 2850,
       category: 'single',
       image: 'https://images.pokemontcg.io/sv3pt5/199_hires.png',
       description: 'Carta holográfica de la expansión Pokémon 151. Rarity: Special Illustration Rare. Condición NM.',
       stock: 2,
-      expansion: '151',
+      expansion: 'Pokémon 151',
       region: 'Inglés (USA)',
-      cardCondition: 'NM'
+      cardCondition: 'NM',
+      gameType: 'POKEMON'
     },
     {
-      id: 'mock_s2',
-      name: 'Mew ex (205/165) SIR',
-      price: 1890,
+      id: 'mock_lor2',
+      name: 'Stitch - Carefree Surfer Enchanted #206/204',
+      price: 5200,
       category: 'single',
-      image: 'https://images.pokemontcg.io/sv3pt5/205_hires.png',
-      description: 'Carta holográfica de la expansión Pokémon 151. Rarity: Special Illustration Rare. Condición NM.',
+      image: 'https://cards.lorcast.io/card/digital/large/crd_35c968e4b25945e897940860221f9d51.png',
+      description: 'Stitch Surfero Enchanted arte alternativo. Condición NM.',
+      stock: 2,
+      expansion: 'The First Chapter',
+      region: 'Inglés (USA)',
+      cardCondition: 'NM',
+      gameType: 'LORCANA'
+    },
+    {
+      id: 'mock_op2',
+      name: 'Roronoa Zoro Manga Alt #OP06-118',
+      price: 21500,
+      category: 'single',
+      image: 'https://optcgapi.com/media/static/Card_Images/OP06-118_p2.jpg',
+      description: 'Zoro Manga Alternate Art en Wings of the Captain. Condición NM.',
       stock: 1,
-      expansion: '151',
+      expansion: 'Wings of the Captain',
       region: 'Inglés (USA)',
-      cardCondition: 'NM'
+      cardCondition: 'NM',
+      gameType: 'ONE_PIECE'
     },
     {
-      id: 'mock_s3',
-      name: 'Pikachu (173/165) IR',
-      price: 950,
+      id: 'mock_ygo2',
+      name: 'Dark Magician Girl Ghost Rare #GFP2-EN177',
+      price: 7800,
       category: 'single',
-      image: 'https://images.pokemontcg.io/sv3pt5/173_hires.png',
-      description: 'Carta holográfica de la expansión Pokémon 151. Rarity: Illustration Rare. Condición NM.',
-      stock: 4,
-      expansion: '151',
+      image: 'https://images.ygoprodeck.com/images/cards/38033121.jpg',
+      description: 'Chica Maga Oscura Ghost Rare 3D. Condición NM.',
+      stock: 2,
+      expansion: 'Ghosts From the Past 2',
       region: 'Inglés (USA)',
-      cardCondition: 'NM'
-    },
-    {
-      id: 'mock_s4',
-      name: 'Gengar VMAX (271/264) Alt Art',
-      price: 4899,
-      category: 'single',
-      image: 'https://images.pokemontcg.io/swsh8/271_hires.png',
-      description: 'Carta ultra rara holográfica de la expansión Fusion Strike. Rarity: Secret Rare. Condición NM.',
-      stock: 1,
-      expansion: 'Fusion Strike',
-      region: 'Inglés (USA)',
-      cardCondition: 'NM'
+      cardCondition: 'NM',
+      gameType: 'YUGIOH'
     },
     {
       id: 'mock_s5',
-      name: 'Giratina V (186/196) Alt Art',
+      name: 'Giratina V Alt Art #186/196',
       price: 6899,
       category: 'single',
       image: 'https://images.pokemontcg.io/swsh11/186_hires.png',
-      description: 'Carta ultra rara de la expansión Lost Origin. Ilustración espectacular de Shinji Kanda.',
+      description: 'Carta ultra rara de Lost Origin. Ilustración espectacular de Shinji Kanda. Condición NM.',
       stock: 1,
       expansion: 'Lost Origin',
       region: 'Inglés (USA)',
-      cardCondition: 'NM'
+      cardCondition: 'NM',
+      gameType: 'POKEMON'
     }
   ];
-  const carouselCards = singleCards.length > 0 ? singleCards : backupSingles;
+
+  // Intercalar cartas de todos los TCGs para que el carrusel sea dinámico y diverso (One Piece, Lorcana, Magic, Yu-Gi-Oh, Pokémon)
+  const carouselCards = React.useMemo(() => {
+    const singles = inventory.filter(p => p.category === 'single');
+    if (singles.length === 0) return backupSingles;
+
+    const tcgOrder = ['ONE_PIECE', 'LORCANA', 'MAGIC', 'YUGIOH', 'POKEMON'];
+    const buckets: Record<string, Product[]> = {
+      ONE_PIECE: [],
+      LORCANA: [],
+      MAGIC: [],
+      YUGIOH: [],
+      POKEMON: []
+    };
+
+    singles.forEach(s => {
+      let key = 'POKEMON';
+      if (s.gameType === 'ONE_PIECE' || s.gameType === 'ONEPIECE') key = 'ONE_PIECE';
+      else if (s.gameType === 'LORCANA') key = 'LORCANA';
+      else if (s.gameType === 'MAGIC') key = 'MAGIC';
+      else if (s.gameType === 'YUGIOH') key = 'YUGIOH';
+      buckets[key].push(s);
+    });
+
+    // Ordenar cada bucket por precio para que lo mejor de cada TCG salga primero
+    Object.keys(buckets).forEach(k => {
+      buckets[k].sort((a, b) => b.price - a.price);
+    });
+
+    // Intercalar ronda por ronda (round-robin)
+    const result: Product[] = [];
+    let round = 0;
+    let addedInRound = true;
+
+    while (addedInRound) {
+      addedInRound = false;
+      for (const tcg of tcgOrder) {
+        if (buckets[tcg][round]) {
+          result.push(buckets[tcg][round]);
+          addedInRound = true;
+        }
+      }
+      round++;
+    }
+
+    return result.length > 0 ? result : singles;
+  }, [inventory]);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const scrollCarousel = (direction: 'left' | 'right') => {
@@ -381,12 +513,14 @@ export default function Home({
         }}>
           {featuredShowcaseCards.map(product => {
             const gameColor = 
-              product.gameType === 'ONE_PIECE' ? '#06b6d4' :
+              product.gameType === 'LORCANA' ? '#a855f7' :
+              product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? '#06b6d4' :
               product.gameType === 'YUGIOH' ? '#ef4444' :
               product.gameType === 'MAGIC' ? '#f97316' : '#ffcb05';
 
             const gameLabel = 
-              product.gameType === 'ONE_PIECE' ? 'One Piece' :
+              product.gameType === 'LORCANA' ? 'Disney Lorcana' :
+              product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'One Piece' :
               product.gameType === 'YUGIOH' ? 'Yu-Gi-Oh!' :
               product.gameType === 'MAGIC' ? 'Magic' : 'Pokémon';
 
@@ -837,6 +971,7 @@ export default function Home({
                 <img 
                   src={product.image} 
                   alt={product.name} 
+                  onError={(e) => { e.currentTarget.src = '/generic_card.png'; }}
                   style={{
                     maxWidth: '100%',
                     maxHeight: '100%',
@@ -848,9 +983,37 @@ export default function Home({
 
               {/* Información */}
               <div>
-                <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', textTransform: 'uppercase', marginBottom: '2px' }}>
-                  {product.expansion || 'Carta Suelta'}
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{
+                    fontSize: '8px',
+                    fontWeight: 800,
+                    padding: '2px 5px',
+                    borderRadius: '4px',
+                    backgroundColor: product.gameType === 'LORCANA' ? 'rgba(168, 85, 247, 0.2)' :
+                                     product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'rgba(6, 182, 212, 0.2)' :
+                                     product.gameType === 'YUGIOH' ? 'rgba(239, 68, 68, 0.2)' :
+                                     product.gameType === 'MAGIC' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(255, 203, 5, 0.2)',
+                    color: product.gameType === 'LORCANA' ? '#c084fc' :
+                           product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? '#22d3ee' :
+                           product.gameType === 'YUGIOH' ? '#f87171' :
+                           product.gameType === 'MAGIC' ? '#fb923c' : '#ffcb05',
+                    border: `1px solid ${
+                      product.gameType === 'LORCANA' ? 'rgba(168, 85, 247, 0.4)' :
+                      product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'rgba(6, 182, 212, 0.4)' :
+                      product.gameType === 'YUGIOH' ? 'rgba(239, 68, 68, 0.4)' :
+                      product.gameType === 'MAGIC' ? 'rgba(249, 115, 22, 0.4)' : 'rgba(255, 203, 5, 0.4)'
+                    }`,
+                    textTransform: 'uppercase'
+                  }}>
+                    {product.gameType === 'LORCANA' ? 'Lorcana' :
+                     product.gameType === 'ONE_PIECE' || product.gameType === 'ONEPIECE' ? 'One Piece' :
+                     product.gameType === 'YUGIOH' ? 'Yu-Gi-Oh!' :
+                     product.gameType === 'MAGIC' ? 'Magic' : 'Pokémon'}
+                  </span>
+                  <span style={{ fontSize: '8.5px', color: 'var(--text-secondary)', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>
+                    {product.expansion || 'Carta Suelta'}
+                  </span>
+                </div>
                 <h4 style={{
                   fontSize: '13px',
                   fontWeight: 700,
