@@ -139,6 +139,8 @@ export default function CheckoutForm({
             // Execute checkout
             const items = cartItems.map(item => ({
               productId: item.product.id,
+              name: item.product.name,
+              price: item.product.price,
               quantity: item.quantity
             }));
             
@@ -261,6 +263,8 @@ export default function CheckoutForm({
 
     const items = cartItems.map(item => ({
       productId: item.product.id,
+      name: item.product.name,
+      price: item.product.price,
       quantity: item.quantity
     }));
 

@@ -315,7 +315,7 @@ export interface CustomerCheckoutData {
 }
 
 export const apiCheckout = async (
-  cartItems: {productId: string, quantity: number}[],
+  cartItems: {productId: string, quantity: number, name?: string, price?: number}[],
   paymentMethod: string = 'Transferencia',
   paymentReceipt?: string,
   customerData?: CustomerCheckoutData
