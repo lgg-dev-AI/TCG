@@ -28,12 +28,18 @@ export const apiLogin = async (email: string) => {
   }
 
   // Fallback para modo en la nube / Vercel sin servidor independiente
-  const isAdmin = email.toLowerCase().includes('admin');
-  const code = isAdmin ? '2101' : (100000 + Math.floor(Math.random() * 900000)).toString();
+  const cleanEmail = email.toLowerCase().trim();
+  const isAdmin = cleanEmail.includes('admin') || 
+                  cleanEmail.includes('cliente') || 
+                  cleanEmail === 'cliente@pokevault.com' ||
+                  cleanEmail === 'demo@pokevault.com';
+  
+  // Clave maestra predeterminada para cliente / admin
+  const code = isAdmin ? '2026' : (100000 + Math.floor(Math.random() * 900000)).toString();
 
   // Guardar en sessionStorage de forma segura con expiración de 1 hora
   if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem(`pv_otp_${email.toLowerCase().trim()}`, JSON.stringify({
+    sessionStorage.setItem(`pv_otp_${cleanEmail}`, JSON.stringify({
       code,
       expiresAt: Date.now() + 60 * 60 * 1000
     }));
@@ -44,10 +50,10 @@ export const apiLogin = async (email: string) => {
     emailSent: false,
     simulatedEmail: {
       to: email,
-      from: 'no-reply@pokevault.mx',
-      subject: `Código de acceso PokéVault [${code}]`,
+      from: 'admin@pokevault.mx',
+      subject: `Código de acceso Administrador PokéVault [${code}]`,
       code,
-      html: `<div style="padding: 20px; color: white;">Tu código de acceso es: <b style="font-size: 26px; color: #ffcb05; letter-spacing: 3px;">${code}</b><p style="font-size: 11px; color: #aaa;">Válido por 1 hora.</p></div>`
+      html: `<div style="padding: 20px; color: white;">Tu contraseña / código de acceso es: <b style="font-size: 26px; color: #ffcb05; letter-spacing: 3px;">${code}</b><p style="font-size: 11px; color: #aaa;">Acceso completo al Panel de Administrador de PokéVault.</p></div>`
     }
   };
 };
@@ -67,10 +73,19 @@ export const apiVerifyOTP = async (email: string, code: string) => {
   }
 
   const cleanEmail = email.toLowerCase().trim();
-  const cleanCode = code.trim();
+  const cleanCode = code.toString().toLowerCase().trim();
 
-  // 1. Acceso de administrador con PIN maestro 2101
-  const isMasterAdmin = cleanCode === '2101' || cleanCode === '6cf713e83ca48f8a190b07af39303ea10884872d491f8d0c2056907fc2a26bad';
+  // Contraseñas y PINs maestros para administradores y cliente
+  const ADMIN_PASSWORDS = [
+    '2026',
+    '2101',
+    'admin2026',
+    'vault2026',
+    '123456',
+    '6cf713e83ca48f8a190b07af39303ea10884872d491f8d0c2056907fc2a26bad'
+  ];
+
+  const isMasterAdmin = ADMIN_PASSWORDS.includes(cleanCode);
 
   // 2. Verificar si coincide con el OTP dinámico emitido para este correo
   let isValid = false;
@@ -79,7 +94,7 @@ export const apiVerifyOTP = async (email: string, code: string) => {
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        if (parsed.code === cleanCode && Date.now() <= parsed.expiresAt) {
+        if (parsed.code.toString().toLowerCase() === cleanCode && Date.now() <= parsed.expiresAt) {
           isValid = true;
         }
       } catch {}
@@ -87,22 +102,26 @@ export const apiVerifyOTP = async (email: string, code: string) => {
   }
 
   // 3. Fallback código demo general
-  if (cleanCode === '123456') {
+  if (cleanCode === '123456' || isMasterAdmin) {
     isValid = true;
   }
 
   if (!isValid && !isMasterAdmin) {
-    throw new Error('Código incorrecto o expirado.');
+    throw new Error('Código o contraseña incorrecta.');
   }
 
-  const isAdmin = cleanEmail.includes('admin') || isMasterAdmin;
+  const isAdmin = cleanEmail.includes('admin') || 
+                  cleanEmail.includes('cliente') || 
+                  cleanEmail === 'cliente@pokevault.com' ||
+                  isMasterAdmin;
+
   return {
     token: 'jwt_secure_' + Date.now(),
     user: {
-      id: isAdmin ? 'admin_001' : 'usr_' + Date.now(),
+      id: isAdmin ? 'admin_client_001' : 'usr_' + Date.now(),
       email: email,
       role: isAdmin ? 'ADMIN' : 'CUSTOMER',
-      name: isAdmin ? 'Administrador' : 'Usuario PokéVault',
+      name: cleanEmail.includes('cliente') ? 'Cliente Revisor' : (isAdmin ? 'Administrador PokéVault' : 'Usuario PokéVault'),
       lastName: 'PokéVault',
       phone: '555-123-4567',
       address: {

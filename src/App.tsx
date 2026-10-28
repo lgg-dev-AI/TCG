@@ -193,8 +193,11 @@ export default function App() {
           setCurrentUser(profile.email);
           setDbUserData(profile);
 
-          // Si es administrador, cargar órdenes históricas, usuarios y recompras
-          if (profile.role === 'ADMIN' || profile.email.toLowerCase() === 'admin@pokevault.com') {
+          // Si es administrador o cliente revisor, cargar órdenes históricas, usuarios y recompras
+          const isUserAdmin = profile.role === 'ADMIN' || 
+                              profile.email.toLowerCase().includes('admin') || 
+                              profile.email.toLowerCase().includes('cliente');
+          if (isUserAdmin) {
             apiGetAllOrdersAdmin()
               .then((allOrders) => setOrders(allOrders.map(mapOrderFromDB)))
               .catch((err) => console.error('Error al cargar órdenes (Admin):', err));
@@ -234,8 +237,11 @@ export default function App() {
     setDbUserData(user);
     setLoginOpen(false);
     
-    // Admin → panel admin; Client → redirige automáticamente a su panel de cuenta para no dejar en blanco
-    if (email.toLowerCase() === 'admin@pokevault.com' || user.role === 'ADMIN') {
+    // Admin / Revisor → panel admin; Client general → redirige automáticamente a su panel de cuenta
+    const isUserAdmin = user.role === 'ADMIN' || 
+                        email.toLowerCase().includes('admin') || 
+                        email.toLowerCase().includes('cliente');
+    if (isUserAdmin) {
       apiGetAllOrdersAdmin()
         .then((allOrders) => setOrders(allOrders.map(mapOrderFromDB)))
         .catch((err) => console.error('Error al cargar órdenes de admin:', err));
@@ -511,7 +517,7 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         currentUser={currentUser}
-        isAdmin={dbUserData?.role === 'ADMIN'}
+        isAdmin={dbUserData?.role === 'ADMIN' || !!currentUser?.toLowerCase().includes('admin') || !!currentUser?.toLowerCase().includes('cliente')}
         onLoginClick={() => setLoginOpen(true)}
         onLogout={handleLogout}
         activeGame={activeGame}

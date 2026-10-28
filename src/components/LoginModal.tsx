@@ -277,17 +277,17 @@ export default function LoginModal({ isOpen, onClose, onSuccess }: LoginModalPro
                   </div>
 
                   <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    Código de 6 dígitos
+                    Código de Acceso / Contraseña
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
-                      type="text"
+                      type="password"
                       required
-                      maxLength={6}
+                      maxLength={16}
                       disabled={loading}
-                      placeholder="------"
+                      placeholder="••••"
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => setOtp(e.target.value)}
                       style={{
                         width: '100%',
                         backgroundColor: 'rgba(6, 8, 12, 0.6)',
@@ -295,12 +295,11 @@ export default function LoginModal({ isOpen, onClose, onSuccess }: LoginModalPro
                         borderRadius: '8px',
                         padding: '12px 12px 12px 40px',
                         color: 'white',
-                        fontSize: '18px',
-                        fontWeight: 800,
-                        letterSpacing: '0.25em',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        letterSpacing: '0.15em',
                         outline: 'none',
                         transition: 'border-color 0.2s',
-                        fontFamily: 'monospace',
                         textAlign: 'center'
                       }}
                       onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}

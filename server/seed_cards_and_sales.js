@@ -3,12 +3,13 @@ import { query, run, get } from './db.js';
 async function seed() {
   console.log('🌱 Iniciando seeding completo Multi-TCG y ventas en PokéVault...');
 
-  // 1. Asegurar usuarios clientes
+  // 1. Asegurar usuarios clientes y administradores
   const users = [
-    { id: 'usr_carlos_01', email: 'carlos.mendez@coleccion.mx', name: 'Carlos Méndez', phone: '5512345678', city: 'Monterrey', state: 'Nuevo León' },
-    { id: 'usr_sofia_02', email: 'sofia.tcg@gmail.com', name: 'Sofía Ramírez', phone: '3398765432', city: 'Guadalajara', state: 'Jalisco' },
-    { id: 'usr_diego_03', email: 'diego.torres@outlook.com', name: 'Diego Torres', phone: '5587654321', city: 'CDMX', state: 'CDMX' },
-    { id: 'usr_mostrador_04', email: 'mostrador@pokevault.mx', name: 'Cliente Mostrador Local', phone: '8110002233', city: 'San Pedro', state: 'Nuevo León' },
+    { id: 'usr_carlos_01', email: 'carlos.mendez@coleccion.mx', name: 'Carlos Méndez', role: 'CUSTOMER', phone: '5512345678', city: 'Monterrey', state: 'Nuevo León' },
+    { id: 'usr_sofia_02', email: 'sofia.tcg@gmail.com', name: 'Sofía Ramírez', role: 'CUSTOMER', phone: '3398765432', city: 'Guadalajara', state: 'Jalisco' },
+    { id: 'usr_diego_03', email: 'diego.torres@outlook.com', name: 'Diego Torres', role: 'CUSTOMER', phone: '5587654321', city: 'CDMX', state: 'CDMX' },
+    { id: 'usr_mostrador_04', email: 'mostrador@pokevault.mx', name: 'Cliente Mostrador Local', role: 'CUSTOMER', phone: '8110002233', city: 'San Pedro', state: 'Nuevo León' },
+    { id: 'admin_cliente_revisor', email: 'cliente@pokevault.com', name: 'Cliente Revisor VIP', role: 'ADMIN', phone: '8100002026', city: 'San Pedro', state: 'Nuevo León' },
   ];
 
   const userMap = {};
@@ -16,13 +17,16 @@ async function seed() {
     let existing = await get('SELECT id FROM users WHERE email = ?', [u.email]);
     if (!existing) {
       await run(
-        `INSERT INTO users (id, email, name, role, phone, city, state) VALUES (?, ?, ?, 'CUSTOMER', ?, ?, ?)`,
-        [u.id, u.email, u.name, u.phone, u.city, u.state]
+        `INSERT INTO users (id, email, name, role, phone, city, state) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [u.id, u.email, u.name, u.role || 'CUSTOMER', u.phone, u.city, u.state]
       );
       userMap[u.email] = u.id;
-      console.log(`👤 Usuario creado: ${u.email}`);
+      console.log(`👤 Usuario creado: ${u.email} [${u.role}]`);
     } else {
       userMap[u.email] = existing.id;
+      if (u.role === 'ADMIN') {
+        await run(`UPDATE users SET role = 'ADMIN' WHERE id = ?`, [existing.id]);
+      }
     }
   }
 
