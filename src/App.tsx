@@ -62,6 +62,30 @@ const mapProductFromDB = (p: any): Product => ({
   galleryImages: p.gallery_images ? (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images) : (p.galleryImages || [])
 });
 
+// Helper to map order data from backend structure to frontend structure
+const mapOrderFromDB = (o: any): Order => ({
+  id: o.id,
+  customerEmail: o.customerEmail || o.user_email || 'cliente@ejemplo.com',
+  customerName: o.customerName || o.customer_name || o.user_email?.split('@')[0] || 'Cliente',
+  items: (o.items || []).map((it: any) => ({
+    productId: it.product_id || it.productId || '',
+    productName: it.name || it.productName || 'Producto Pokémon',
+    price: Number(it.price_at_purchase || it.price || 0),
+    quantity: Number(it.quantity || 1),
+    image: it.image_url || it.image || '/generic_card.png'
+  })),
+  total: Number(o.total || 0),
+  discountApplied: Number(o.discount_applied || o.discountApplied || 0),
+  status: o.status || 'PAGADO',
+  tracking_number: o.tracking_number || '',
+  date: o.date || (o.created_at ? new Date(o.created_at).toLocaleDateString('es-MX') : new Date().toLocaleDateString('es-MX')),
+  address: o.address || { street: 'Av. Insurgentes Sur 1200', city: 'Ciudad de México', state: 'CDMX', zipCode: '03100' },
+  paymentMethod: o.paymentMethod || (o.tracking_number?.includes('PAYPAL') ? 'PayPal' : 'Efectivo'),
+  paymentReceipt: o.paymentReceipt || o.payment_receipt,
+  paymentReceiptName: o.paymentReceiptName || o.payment_receipt_name,
+  cashAmountReceived: o.cashAmountReceived || o.cash_amount_received
+});
+
 // Helper for localStorage with fallback (retained for minor UI settings)
 const getStorage = <T,>(key: string, defaultValue: T): T => {
   const stored = localStorage.getItem(key);
@@ -161,7 +185,7 @@ export default function App() {
           // Si es administrador, cargar órdenes históricas, usuarios y recompras
           if (profile.role === 'ADMIN' || profile.email.toLowerCase() === 'admin@pokevault.com') {
             apiGetAllOrdersAdmin()
-              .then((allOrders) => setOrders(allOrders))
+              .then((allOrders) => setOrders(allOrders.map(mapOrderFromDB)))
               .catch((err) => console.error('Error al cargar órdenes (Admin):', err));
             apiGetAllUsersAdmin()
               .then((allUsers) => setUsersList(allUsers))
@@ -202,7 +226,7 @@ export default function App() {
     // Admin → panel admin; Client → redirige automáticamente a su panel de cuenta para no dejar en blanco
     if (email.toLowerCase() === 'admin@pokevault.com' || user.role === 'ADMIN') {
       apiGetAllOrdersAdmin()
-        .then((allOrders) => setOrders(allOrders))
+        .then((allOrders) => setOrders(allOrders.map(mapOrderFromDB)))
         .catch((err) => console.error('Error al cargar órdenes de admin:', err));
       apiGetAllUsersAdmin()
         .then((allUsers) => setUsersList(allUsers))
@@ -434,7 +458,7 @@ export default function App() {
     
     // Recargar órdenes
     const allOrders = await apiGetAllOrdersAdmin();
-    setOrders(allOrders);
+    setOrders(allOrders.map(mapOrderFromDB));
 
     // Recargar catálogo
     const prods = await apiGetProducts();

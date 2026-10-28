@@ -291,9 +291,9 @@ router.get('/', authenticate, async (req, res) => {
 router.get('/all', authenticate, requireAdmin, async (req, res) => {
   try {
     const orders = await query(`
-      SELECT o.*, u.email as user_email
+      SELECT o.*, COALESCE(u.email, 'cliente@pokevault.mx') as user_email
       FROM orders o
-      JOIN users u ON u.id = o.user_id
+      LEFT JOIN users u ON u.id = o.user_id
       ORDER BY o.created_at DESC
     `);
     

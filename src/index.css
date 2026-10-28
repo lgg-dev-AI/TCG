@@ -63,6 +63,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #121622;
+  color: #ffffff;
+}
+
 /* Modificación de la restricción del #root de Vite */
 #root {
   width: 100%;

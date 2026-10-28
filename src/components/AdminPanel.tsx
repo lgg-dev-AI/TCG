@@ -704,15 +704,19 @@ export default function AdminPanel({
   };
 
   // Helper to check if order falls in time range
-  const isOrderInTimeRange = (orderDateStr: string) => {
-    if (!orderDateStr || typeof orderDateStr !== 'string') return false;
+  const isOrderInTimeRange = (orderDateStr?: string) => {
+    if (!orderDateStr) return true;
     let orderDate = new Date();
-    if (orderDateStr.includes('/')) {
-      const [day, month, year] = orderDateStr.split('/');
-      orderDate = new Date(Number(year), Number(month) - 1, Number(day));
+    if (typeof orderDateStr === 'string' && orderDateStr.includes('/')) {
+      const parts = orderDateStr.split('/');
+      if (parts.length === 3) {
+        orderDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
     } else {
       orderDate = new Date(orderDateStr);
     }
+    
+    if (isNaN(orderDate.getTime())) return true;
     
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -734,7 +738,7 @@ export default function AdminPanel({
   };
 
   // Filter orders by time range for metrics
-  const filteredOrdersForMetrics = orders.filter(o => isOrderInTimeRange(o.date));
+  const filteredOrdersForMetrics = orders.filter(o => isOrderInTimeRange(o.date || (o as any).created_at));
 
   const totalRevenue = filteredOrdersForMetrics
     .filter(o => {
@@ -1430,20 +1434,21 @@ export default function AdminPanel({
                           setShowPokemonSuggestions(false);
                         }}
                         style={{
-                          backgroundColor: 'rgba(255,255,255,0.06)',
-                          border: '1px solid var(--border-color)',
-                          color: '#fff',
+                          backgroundColor: '#121622',
+                          border: '1px solid rgba(255,255,255,0.18)',
+                          color: '#ffffff',
                           borderRadius: '6px',
-                          padding: '4px 8px',
+                          padding: '5px 10px',
                           fontSize: '11.5px',
                           fontWeight: 700,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          colorScheme: 'dark'
                         }}
                       >
-                        <option value="POKEMON">⚡ Pokémon TCG</option>
-                        <option value="YUGIOH">⚔️ Yu-Gi-Oh!</option>
-                        <option value="MAGIC">🧙 Magic: The Gathering</option>
-                        <option value="ONEPIECE">🏴‍☠️ One Piece Card Game</option>
+                        <option value="POKEMON" style={{ backgroundColor: '#121622', color: '#ffffff' }}>⚡ Pokémon TCG</option>
+                        <option value="YUGIOH" style={{ backgroundColor: '#121622', color: '#ffffff' }}>⚔️ Yu-Gi-Oh!</option>
+                        <option value="MAGIC" style={{ backgroundColor: '#121622', color: '#ffffff' }}>🧙 Magic: The Gathering</option>
+                        <option value="ONEPIECE" style={{ backgroundColor: '#121622', color: '#ffffff' }}>🏴‍☠️ One Piece Card Game</option>
                       </select>
                     </div>
                   </div>
