@@ -36,24 +36,35 @@ import {
   type CategoryItem
 } from './api';
 
+const normalizeCategory = (cat: string): Product['category'] => {
+  const c = (cat || '').toLowerCase().trim();
+  if (c === 'single' || c === 'cartas sueltas' || c === 'carta suelta') return 'single';
+  if (c === 'booster_box' || c === 'caja de sobres' || c === 'producto sellado') return 'booster_box';
+  if (c === 'etb' || c === 'elite trainer box') return 'etb';
+  if (c === 'blister') return 'blister';
+  if (c === 'accessory' || c === 'accesorios' || c === 'accesorio') return 'accessory';
+  if (c === 'videogame' || c === 'videojuegos' || c === 'videojuego' || c === 'consolas') return 'videogame';
+  return 'single';
+};
+
 // Helper to map product data from backend structure to legacy frontend structure
 const mapProductFromDB = (p: any): Product => ({
   id: p.id,
   name: p.name,
   price: p.price,
-  category: p.category,
-  image: p.image_url,
-  description: p.description,
-  stock: p.stock,
+  category: normalizeCategory(p.category),
+  image: p.image_url || p.image || '/generic_card.png',
+  description: p.description || '',
+  stock: p.stock ?? 1,
   expansion: p.expansion || '',
-  isPromo: !!p.is_promo,
+  isPromo: !!p.is_promo || !!p.isPromo,
   region: p.region || '',
-  pulledFrom: p.pulled_from || '',
-  cardCondition: p.card_condition || '',
-  gameType: p.game_type || 'POKEMON',
+  pulledFrom: p.pulled_from || p.pulledFrom || '',
+  cardCondition: p.card_condition || p.cardCondition || '',
+  gameType: p.game_type || p.gameType || 'POKEMON',
   platform: p.platform || '',
   completeness: p.completeness || '',
-  isTournamentStaple: !!p.is_tournament_staple,
+  isTournamentStaple: !!p.is_tournament_staple || !!p.isTournamentStaple,
   isFirstEdition: !!p.is_first_edition || !!p.isFirstEdition,
   subCategory: p.subcategory || p.subCategory || '',
   marketPrice: p.market_price ? Number(p.market_price) : (p.marketPrice ? Number(p.marketPrice) : undefined),
@@ -565,7 +576,7 @@ export default function App() {
               onAddToCart={handleAddToCart}
               onViewDetails={setSelectedProduct}
               searchQuery={searchQuery}
-              inventory={inventory.filter(p => p.gameType === activeGame || (!p.gameType && activeGame === 'POKEMON'))}
+              inventory={inventory}
               favorites={currentUserData?.favorites || []}
               onToggleFavorite={handleToggleFavorite}
               initialCategory={catalogCategory}

@@ -1,3 +1,5 @@
+import { INITIAL_PRODUCTS, STANDALONE_ORDERS } from './data/initialProducts';
+
 const API_BASE = '/api';
 
 function getAuthHeaders() {
@@ -120,23 +122,50 @@ export const apiVerifyOTP = async (email: string, code: string) => {
 export const apiGetProducts = async () => {
   try {
     const res = await fetch(`${API_BASE}/products`);
-    if (res.ok) return res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
   } catch (e) {
-    console.warn('API /products no disponible, usando localStorage', e);
+    console.warn('API /products no disponible, usando modo autónomo Vercel / local:', e);
   }
-  const local = localStorage.getItem('pokevault_standalone_products');
-  return local ? JSON.parse(local) : [];
+
+  if (typeof localStorage !== 'undefined') {
+    const local = localStorage.getItem('pokevault_standalone_products');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length >= 10) return parsed;
+      } catch {}
+    }
+    // Guardar catálogo inicial completo en localStorage para persistencia y modificaciones
+    localStorage.setItem('pokevault_standalone_products', JSON.stringify(INITIAL_PRODUCTS));
+  }
+  return INITIAL_PRODUCTS;
 };
 
 export const apiGetAllProductsAdmin = async () => {
   try {
     const res = await fetch(`${API_BASE}/products/all`, { headers: getAuthHeaders() });
-    if (res.ok) return res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
   } catch (e) {
-    console.warn('API /products/all no disponible, usando localStorage', e);
+    console.warn('API /products/all no disponible, usando modo autónomo Vercel / local:', e);
   }
-  const local = localStorage.getItem('pokevault_standalone_products');
-  return local ? JSON.parse(local) : [];
+
+  if (typeof localStorage !== 'undefined') {
+    const local = localStorage.getItem('pokevault_standalone_products');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length >= 10) return parsed;
+      } catch {}
+    }
+    localStorage.setItem('pokevault_standalone_products', JSON.stringify(INITIAL_PRODUCTS));
+  }
+  return INITIAL_PRODUCTS;
 };
 
 export const apiCreateProduct = async (productData: any) => {
@@ -232,9 +261,27 @@ export const apiGetMyOrders = async () => {
 };
 
 export const apiGetAllOrdersAdmin = async () => {
-  const res = await fetch(`${API_BASE}/orders/all`, { headers: getAuthHeaders() });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/orders/all`, { headers: getAuthHeaders() });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {
+    console.warn('API /orders/all no disponible, usando modo autónomo Vercel / local:', e);
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    const local = localStorage.getItem('pokevault_standalone_orders');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch {}
+    }
+    localStorage.setItem('pokevault_standalone_orders', JSON.stringify(STANDALONE_ORDERS));
+  }
+  return STANDALONE_ORDERS;
 };
 
 export const apiUpdateOrderStatus = async (id: string, status: string, trackingNumber?: string) => {

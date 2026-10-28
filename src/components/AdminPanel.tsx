@@ -838,7 +838,10 @@ export default function AdminPanel({
   // Filtered inventory items
   const filteredInventory = inventory.filter(p => 
     (p.name || '').toLowerCase().includes(invSearch.toLowerCase()) || 
-    (p.category || '').toLowerCase().includes(invSearch.toLowerCase())
+    (p.category || '').toLowerCase().includes(invSearch.toLowerCase()) ||
+    (p.gameType || '').toLowerCase().includes(invSearch.toLowerCase()) ||
+    (p.subCategory || '').toLowerCase().includes(invSearch.toLowerCase()) ||
+    (p.expansion || '').toLowerCase().includes(invSearch.toLowerCase())
   );
 
   // Filtered orders (search + status filter)

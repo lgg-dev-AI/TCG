@@ -4,6 +4,7 @@ import ProductItem from './ProductItem';
 import type { Product } from './ProductItem';
 import ConditionGuideModal from './ConditionGuideModal';
 import { apiGetCategories, type CategoryItem } from '../api';
+import { INITIAL_PRODUCTS } from '../data/initialProducts';
 
 interface ProductCatalogProps {
   onAddToCart: (product: Product) => void;
@@ -16,158 +17,7 @@ interface ProductCatalogProps {
   activeGame: string;
 }
 
-// Productos Sellados y Accesorios Mockeados con imágenes oficiales estables
-export const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 'sealed_1',
-    name: 'Caja de Sobres (Booster Box) Scarlet & Violet: Twilight Masquerade',
-    price: 2899,
-    category: 'booster_box',
-    image: 'https://images.pokemoncenter.com/images/products/P9832/712-98696/712-98696_1.jpg',
-    description: 'Contiene 36 sobres de la expansión Scarlet & Violet: Twilight Masquerade. ¡Busca las cartas de Ogerpon y Greninja ex con arte alternativo!',
-    stock: 12,
-    expansion: 'Twilight Masquerade',
-    isPromo: true
-  },
-  {
-    id: 'sealed_2',
-    name: 'Elite Trainer Box (ETB) Pokémon 151',
-    price: 1499,
-    category: 'etb',
-    image: 'https://images.pokemoncenter.com/images/products/P9411/712-98442/712-98442_1.jpg',
-    description: 'Edición especial de colección. Incluye 9 sobres de Pokémon 151, 1 carta promo foil de Snorlax, micas de cartas de 151, dados y accesorios de juego.',
-    stock: 5,
-    expansion: 'Pokémon 151',
-    isPromo: true
-  },
-  {
-    id: 'sealed_3',
-    name: 'Caja de Sobres (Booster Box) Scarlet & Violet: Temporal Forces',
-    price: 2799,
-    category: 'booster_box',
-    image: 'https://images.pokemoncenter.com/images/products/P9642/712-98606/712-98606_1.jpg',
-    description: 'Contiene 36 sobres de la expansión Temporal Forces. Presentando nuevos Pokémon del Pasado y del Futuro como Walking Wake ex y Iron Leaves ex.',
-    stock: 8,
-    expansion: 'Temporal Forces'
-  },
-  {
-    id: 'sealed_4',
-    name: 'Elite Trainer Box Scarlet & Violet: Paldean Fates',
-    price: 1299,
-    category: 'etb',
-    image: 'https://images.pokemoncenter.com/images/products/P9642/712-98604/712-98604_1.jpg',
-    description: 'Incluye 9 sobres de Paldean Fates, 1 carta promo foil de Mimikyu Shiny, dados y accesorios. ¡Colecciona Pokémon Shiny e increíbles cartas Full Art!',
-    stock: 15,
-    expansion: 'Paldean Fates'
-  },
-  {
-    id: 'sealed_5',
-    name: 'Caja de Sobres (Booster Box) Pokémon 151 (Japonesa)',
-    price: 3499,
-    category: 'booster_box',
-    image: 'https://images.pokemoncenter.com/images/products/P9411/712-98441/712-98441_1.jpg',
-    description: 'Importada directamente de Japón. Contiene 20 sobres de la aclamada expansión Pokémon 151 en su idioma original. ¡Un artículo de colección imprescindible!',
-    stock: 3,
-    expansion: 'Pokémon 151'
-  },
-  {
-    id: 'sealed_6',
-    name: 'Blister Pack de 3 Sobres Scarlet & Violet: Paradox Rift',
-    price: 299,
-    category: 'blister',
-    image: 'https://images.pokemoncenter.com/images/products/P9532/712-98567/712-98567_1.jpg',
-    description: 'Incluye 3 sobres de Paradox Rift y una carta promocional holográfica exclusiva. Ideal para potenciar tu baraja de manera rápida.',
-    stock: 24,
-    expansion: 'Paradox Rift'
-  },
-  {
-    id: 'acc_1',
-    name: 'Micas Protectoras PokéVault Standard (65 piezas)',
-    price: 149,
-    category: 'accessory',
-    image: 'https://images.pokemoncenter.com/images/products/P9159/712-97066/712-97066_1.jpg',
-    description: 'Micas protectoras de calidad de torneo para cartas de tamaño estándar. Diseño exclusivo de Pokebola PokéVault.',
-    stock: 50,
-  },
-  {
-    id: 'acc_2',
-    name: 'Carpeta de Colección PokéVault (9 Bolsillos, 360 Cartas)',
-    price: 399,
-    category: 'accessory',
-    image: 'https://images.pokemoncenter.com/images/products/P9159/712-97069/712-97069_1.jpg',
-    description: 'Carpeta con bolsillos de carga lateral y cierre elástico. Ideal para mantener protegidas tus cartas más valiosas contra el polvo y rayones.',
-    stock: 20,
-  },
-  {
-    id: 'acc_3',
-    name: 'Playmat de Neopreno Premium: PokéVault Battle Arena',
-    price: 499,
-    category: 'accessory',
-    image: 'https://images.pokemoncenter.com/images/products/P9159/712-97062/712-97062_1.jpg',
-    description: 'Tapete de juego de hule natural con superficie de tela suave. Bordes cosidos de alta resistencia para evitar deshilachado. Tamaño estándar de juego.',
-    stock: 10,
-  },
-  {
-    id: 'vg_1',
-    name: 'Pokémon Escarlata (Nintendo Switch)',
-    price: 1199,
-    category: 'videogame',
-    image: 'https://images.pokemoncenter.com/images/products/P8895/710-95880/710-95880_1.jpg',
-    description: 'Juego físico original para Nintendo Switch. Explora la región de Paldea en un mundo abierto sin límites. Caja y cartucho en perfecto estado garantizado.',
-    stock: 3,
-    platform: 'Nintendo Switch',
-    completeness: 'CIB (Completo en Caja)'
-  },
-  {
-    id: 'vg_2',
-    name: 'Super Smash Bros. Ultimate (Nintendo Switch)',
-    price: 1099,
-    category: 'videogame',
-    image: 'https://images.pokemoncenter.com/images/products/P9159/712-97066/712-97066_1.jpg',
-    description: 'El clásico juego de peleas competitivo de Nintendo con Pikachu, Charizard, Greninja, Lucario y Mewtwo. Cartucho probado y funcionando al 100%.',
-    stock: 2,
-    platform: 'Nintendo Switch',
-    completeness: 'CIB (Completo en Caja)'
-  },
-  {
-    id: 'vg_3',
-    name: 'Consola Nintendo Switch OLED - Edición Especial Pokémon',
-    price: 6499,
-    category: 'videogame',
-    image: 'https://images.pokemoncenter.com/images/products/P9411/712-98442/712-98442_1.jpg',
-    description: 'Consola Nintendo Switch OLED con pantalla de 7 pulgadas en perfecto estado. Incluye Joy-Con edición temática, dock, cables originales y garantía de funcionamiento en tienda.',
-    stock: 1,
-    platform: 'Consolas / Hardware',
-    completeness: 'Completo con Accesorios'
-  },
-  {
-    id: 'single_fe_1',
-    name: 'Charizard Holo (1ª Edición Stamp Vintage)',
-    price: 18500,
-    category: 'single',
-    image: 'https://images.pokemontcg.io/base1/4_hires.png',
-    description: 'Auténtica carta vintage de Charizard con sello oficial de 1ª Edición (First Edition Stamp). En estado de conservación excepcional Near Mint.',
-    stock: 1,
-    expansion: 'Base Set',
-    region: 'Inglés (USA)',
-    cardCondition: 'NM',
-    isFirstEdition: true,
-    isPromo: true
-  },
-  {
-    id: 'single_fe_2',
-    name: 'Lugia ex (1ª Edición Golden Border)',
-    price: 4999,
-    category: 'single',
-    image: 'https://images.pokemontcg.io/ex10/105_hires.png',
-    description: 'Carta icónica de Lugia con sello de 1ª Edición y borde holográfico de colección. Probada e inspeccionada bajo luz ultravioleta.',
-    stock: 2,
-    expansion: 'Unseen Forces',
-    region: 'Inglés (USA)',
-    cardCondition: 'NM',
-    isFirstEdition: true
-  }
-];
+export const MOCK_PRODUCTS = INITIAL_PRODUCTS;
 
 export default function ProductCatalog({
   onAddToCart,
@@ -274,7 +124,15 @@ export default function ProductCatalog({
     const filteredDB = sourceProducts.filter(p => {
       if (selectedCategory === 'all') return true;
       if (selectedCategory === 'sealed') return p.category === 'booster_box' || p.category === 'etb' || p.category === 'blister';
-      return p.category === selectedCategory;
+      if (selectedCategory === 'single' || selectedCategory === 'accessory' || selectedCategory === 'videogame') {
+        return p.category === selectedCategory;
+      }
+      const catLower = selectedCategory.toLowerCase();
+      if (catLower === 'pokemon') return p.gameType === 'POKEMON' || p.subCategory === 'pokemon';
+      if (catLower === 'yugioh') return p.gameType === 'YUGIOH' || p.subCategory === 'yugioh';
+      if (catLower === 'magic') return p.gameType === 'MAGIC' || p.subCategory === 'magic';
+      if (catLower === 'onepiece' || catLower === 'one_piece') return p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE' || p.subCategory === 'onepiece';
+      return p.category === selectedCategory || p.subCategory === selectedCategory;
     });
     list = [...list, ...filteredDB];
 
@@ -291,9 +149,41 @@ export default function ProductCatalog({
                              p.description.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
-    // Filtrar por Tipo de Pokémon (solo aplica para cartas sueltas)
-    if (selectedType !== 'all') {
-      list = list.filter(p => p.pokemonCardData?.types?.includes(selectedType));
+    // Filtrar por Subcategoría Dinámica (prioridad cuando el usuario elige una línea/TCG específica)
+    if (selectedSubCategory !== 'all') {
+      list = list.filter(p => {
+        const pSub = (p.subCategory || '').toLowerCase();
+        const targetSub = selectedSubCategory.toLowerCase();
+        if (pSub === targetSub) return true;
+        // Mapeo inteligente para Pokémon TCG
+        if (targetSub === 'pokemon' && (p.gameType === 'POKEMON' || (!p.gameType && p.category !== 'videogame' && p.category !== 'accessory'))) return true;
+        // Mapeo inteligente para Yu-Gi-Oh!
+        if (targetSub === 'yugioh' && p.gameType === 'YUGIOH') return true;
+        // Mapeo inteligente para Magic: The Gathering
+        if (targetSub === 'magic' && p.gameType === 'MAGIC') return true;
+        // Mapeo inteligente para One Piece Card Game
+        if ((targetSub === 'onepiece' || targetSub === 'one_piece') && (p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE')) return true;
+        // Mapeo para videojuegos
+        if (targetSub === 'switch' && p.platform?.toLowerCase().includes('switch')) return true;
+        if (targetSub === 'playstation' && p.platform?.toLowerCase().includes('playstation')) return true;
+        if (targetSub === 'xbox' && p.platform?.toLowerCase().includes('xbox')) return true;
+        if (targetSub === 'retro' && p.platform?.toLowerCase().includes('retro')) return true;
+        // Mapeo para accesorios
+        if (targetSub === 'sleeves' && (p.category === 'accessory' && (p.name.toLowerCase().includes('mica') || p.name.toLowerCase().includes('sleeve')))) return true;
+        if (targetSub === 'binders' && (p.category === 'accessory' && (p.name.toLowerCase().includes('carpeta') || p.name.toLowerCase().includes('binder')))) return true;
+        if (targetSub === 'toploaders' && (p.category === 'accessory' && (p.name.toLowerCase().includes('toploader') || p.name.toLowerCase().includes('acrílic')))) return true;
+        if (targetSub === 'playmats' && (p.category === 'accessory' && (p.name.toLowerCase().includes('playmat') || p.name.toLowerCase().includes('tapete')))) return true;
+        return false;
+      });
+    } else if (activeGame && activeGame !== 'ALL' && selectedCategory !== 'videogame' && selectedCategory !== 'accessory') {
+      // Si no se eligió subcategoría específica, respetar el TCG activo de la barra superior
+      list = list.filter(p => {
+        if (activeGame === 'POKEMON') return p.gameType === 'POKEMON' || (!p.gameType && p.category !== 'videogame' && p.category !== 'accessory');
+        if (activeGame === 'YUGIOH') return p.gameType === 'YUGIOH';
+        if (activeGame === 'MAGIC') return p.gameType === 'MAGIC';
+        if (activeGame === 'ONE_PIECE' || activeGame === 'ONEPIECE') return p.gameType === 'ONE_PIECE' || p.gameType === 'ONEPIECE';
+        return true;
+      });
     }
 
     // Filtrar por Región / Idioma (solo aplica para cartas sueltas)
@@ -311,18 +201,6 @@ export default function ProductCatalog({
         if (p.category !== 'single') return true;
         const cond = p.cardCondition || 'NM';
         return cond.toLowerCase() === selectedCondition.toLowerCase();
-      });
-    }
-
-    // Filtrar por Rareza de Pokémon (solo aplica para cartas sueltas)
-    if (selectedRarity !== 'all') {
-      list = list.filter(p => {
-        if (!p.pokemonCardData) return false;
-        const rarity = p.pokemonCardData.rarity.toLowerCase();
-        if (selectedRarity === 'rare') return rarity.includes('rare') || rarity.includes('holo') || rarity.includes('secret') || rarity.includes('promo');
-        if (selectedRarity === 'uncommon') return rarity.includes('uncommon');
-        if (selectedRarity === 'common') return rarity.includes('common');
-        return true;
       });
     }
 
@@ -344,18 +222,12 @@ export default function ProductCatalog({
       });
     }
 
-    // Filtrar por Ofertas vs Mercado TCGplayer
+    // Filtrar por Ofertas vs Mercado
     if (onlyDealsFilter) {
       list = list.filter(p => {
-        const tcgMkt = p.pokemonCardData?.tcgplayer?.prices?.holofoil?.market || p.pokemonCardData?.tcgplayer?.prices?.normal?.market;
-        const effectiveMarket = p.marketPrice || (tcgMkt ? Math.round(tcgMkt * 20) : 0);
+        const effectiveMarket = p.marketPrice || 0;
         return effectiveMarket > p.price;
       });
-    }
-
-    // Filtrar por Subcategoría Dinámica
-    if (selectedSubCategory !== 'all') {
-      list = list.filter(p => p.subCategory === selectedSubCategory);
     }
 
     // Filtrar por Precio Máximo
