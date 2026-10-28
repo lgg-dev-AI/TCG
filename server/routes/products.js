@@ -38,7 +38,8 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
   const { 
     name, price, category, image_url, description, stock, expansion, 
     is_promo, region, pulled_from, card_condition, game_type, gallery_images,
-    platform, completeness, is_tournament_staple, is_first_edition
+    platform, completeness, is_tournament_staple, is_first_edition,
+    subcategory, market_price, market_price_low, market_price_high
   } = req.body;
   
   if (!name || !price || !category || !image_url) {
@@ -55,12 +56,15 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
       `INSERT INTO products (
         id, name, price, category, image_url, description, stock, expansion, 
         is_promo, region, pulled_from, card_condition, game_type, gallery_images,
-        platform, completeness, is_tournament_staple, is_first_edition
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        platform, completeness, is_tournament_staple, is_first_edition,
+        subcategory, market_price, market_price_low, market_price_high
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, name, Number(price), category, image_url, description, Number(stock), expansion, 
         is_promo ? 1 : 0, region || '', pulled_from || '', card_condition || '', game_type || 'POKEMON', gallery_images || '[]',
-        platform || '', completeness || '', is_tournament_staple ? 1 : 0, is_first_edition ? 1 : 0
+        platform || '', completeness || '', is_tournament_staple ? 1 : 0, is_first_edition ? 1 : 0,
+        subcategory || '', market_price ? Number(market_price) : 0, 
+        market_price_low ? Number(market_price_low) : 0, market_price_high ? Number(market_price_high) : 0
       ]
     );
     await logAdminAction(req.user.email, 'Crear Producto', `Se agregó el producto "${name}" (Precio: $${price} MXN, Stock: ${stock})`);
@@ -78,7 +82,8 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
   const { 
     name, price, category, image_url, description, stock, expansion, 
     is_promo, region, pulled_from, card_condition, game_type, gallery_images,
-    platform, completeness, is_tournament_staple, is_first_edition
+    platform, completeness, is_tournament_staple, is_first_edition,
+    subcategory, market_price, market_price_low, market_price_high
   } = req.body;
 
   if (Number(price) <= 0) return res.status(400).json({ error: 'Precio inválido' });
@@ -92,7 +97,8 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
       `UPDATE products 
        SET name=?, price=?, category=?, image_url=?, description=?, stock=?, expansion=?, 
            is_promo=?, region=?, pulled_from=?, card_condition=?, game_type=?, gallery_images=?,
-           platform=?, completeness=?, is_tournament_staple=?, is_first_edition=?
+           platform=?, completeness=?, is_tournament_staple=?, is_first_edition=?,
+           subcategory=?, market_price=?, market_price_low=?, market_price_high=?
        WHERE id=?`,
       [
         name, Number(price), category, image_url, description, Number(stock), expansion, 
@@ -102,6 +108,10 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
         completeness !== undefined ? completeness : (existing.completeness || ''),
         is_tournament_staple !== undefined ? (is_tournament_staple ? 1 : 0) : (existing.is_tournament_staple || 0),
         is_first_edition !== undefined ? (is_first_edition ? 1 : 0) : (existing.is_first_edition || 0),
+        subcategory !== undefined ? subcategory : (existing.subcategory || ''),
+        market_price !== undefined ? Number(market_price) : (existing.market_price || 0),
+        market_price_low !== undefined ? Number(market_price_low) : (existing.market_price_low || 0),
+        market_price_high !== undefined ? Number(market_price_high) : (existing.market_price_high || 0),
         id
       ]
     );

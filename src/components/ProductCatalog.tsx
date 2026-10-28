@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, AlertCircle } from 'lucide-react';
+import { Search, Filter, AlertCircle, HelpCircle, TrendingUp } from 'lucide-react';
 import ProductItem from './ProductItem';
 import type { Product } from './ProductItem';
+import ConditionGuideModal from './ConditionGuideModal';
+import { apiGetCategories, type CategoryItem } from '../api';
 
 interface ProductCatalogProps {
   onAddToCart: (product: Product) => void;
@@ -194,6 +196,14 @@ export default function ProductCatalog({
   const [selectedCondition, setSelectedCondition] = useState<string>('all');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
   const [selectedEdition, setSelectedEdition] = useState<string>('all');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
+  const [onlyDealsFilter, setOnlyDealsFilter] = useState<boolean>(false);
+  const [isConditionGuideOpen, setIsConditionGuideOpen] = useState<boolean>(false);
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
+
+  useEffect(() => {
+    apiGetCategories().then(setCategoriesList).catch(console.error);
+  }, []);
 
   // Estado para cartas API (Desactivado para catálogo limpio)
   const loading = false;
@@ -328,6 +338,20 @@ export default function ProductCatalog({
       });
     }
 
+    // Filtrar por Ofertas vs Mercado TCGplayer
+    if (onlyDealsFilter) {
+      list = list.filter(p => {
+        const tcgMkt = p.pokemonCardData?.tcgplayer?.prices?.holofoil?.market || p.pokemonCardData?.tcgplayer?.prices?.normal?.market;
+        const effectiveMarket = p.marketPrice || (tcgMkt ? Math.round(tcgMkt * 20) : 0);
+        return effectiveMarket > p.price;
+      });
+    }
+
+    // Filtrar por Subcategoría Dinámica
+    if (selectedSubCategory !== 'all') {
+      list = list.filter(p => p.subCategory === selectedSubCategory);
+    }
+
     // Filtrar por Precio Máximo
     list = list.filter(p => p.price <= maxPrice);
 
@@ -423,13 +447,62 @@ export default function ProductCatalog({
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
             marginBottom: '20px',
             borderBottom: '1px solid var(--border-color)',
-            paddingBottom: '10px'
+            paddingBottom: '12px'
           }}>
-            <Filter size={18} style={{ color: 'var(--primary)' }} />
-            <h3 style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-heading)' }}>Filtros</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={18} style={{ color: 'var(--primary)' }} />
+              <h3 style={{ fontSize: '16px', fontWeight: 700, fontFamily: 'var(--font-heading)', margin: 0 }}>Filtros</h3>
+            </div>
+
+            {/* Acciones Rápidas TCGplayer & Ofertas de Mercado */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setOnlyDealsFilter(!onlyDealsFilter)}
+                className="btn"
+                style={{
+                  backgroundColor: onlyDealsFilter ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  border: onlyDealsFilter ? '1.5px solid #10b981' : '1px solid var(--border-color)',
+                  color: onlyDealsFilter ? '#34d399' : '#fff',
+                  fontSize: '12px',
+                  padding: '6px 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  borderRadius: '8px'
+                }}
+              >
+                <TrendingUp size={14} color={onlyDealsFilter ? '#34d399' : '#ffcb05'} />
+                {onlyDealsFilter ? '🔥 Mostrando Ofertas vs Mercado' : '🔥 Ver Ofertas vs Mercado'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsConditionGuideOpen(true)}
+                className="btn"
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border-color)',
+                  color: '#fff',
+                  fontSize: '12px',
+                  padding: '6px 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  borderRadius: '8px'
+                }}
+              >
+                <HelpCircle size={14} color="#ffcb05" /> Guía de Estados (NM, LP...)
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
@@ -619,6 +692,34 @@ export default function ProductCatalog({
               </div>
             )}
 
+            {/* Filtro por Subcategoría Dinámica */}
+            {categoriesList.filter(c => c.parent_id).length > 0 && (
+              <div style={{ minWidth: '180px', flexGrow: 1 }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
+                  Subcategoría / Línea:
+                </label>
+                <select
+                  value={selectedSubCategory}
+                  onChange={(e) => setSelectedSubCategory(e.target.value)}
+                  style={{
+                    width: '100%',
+                    backgroundColor: 'var(--bg-body)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '6px',
+                    color: 'white',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    outline: 'none'
+                  }}
+                >
+                  <option value="all">Todas las Subcategorías</option>
+                  {categoriesList.filter(c => c.parent_id).map(sub => (
+                    <option key={sub.id} value={sub.slug}>{sub.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Filtro de Precio Máximo */}
             <div style={{ minWidth: '200px', flexGrow: 1 }}>
               <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>
@@ -783,6 +884,12 @@ export default function ProductCatalog({
           }
         }
       `}</style>
+
+      {/* Modal Interactivo de Guía de Estados TCGplayer */}
+      <ConditionGuideModal
+        isOpen={isConditionGuideOpen}
+        onClose={() => setIsConditionGuideOpen(false)}
+      />
     </div>
   );
 }

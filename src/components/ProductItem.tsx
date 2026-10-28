@@ -22,6 +22,10 @@ export interface Product {
   completeness?: string; // CIB (Completo en Caja), Solo Cartucho/Disco, Sellado
   isTournamentStaple?: boolean; // Carta clave para torneos competitivos
   isFirstEdition?: boolean; // 1ª Edición (1st Edition Stamp)
+  subCategory?: string; // Subcategoría dinámica (ej: pokemon, switch, etc.)
+  marketPrice?: number; // Precio de mercado TCGplayer en MXN
+  marketPriceLow?: number;
+  marketPriceHigh?: number;
 }
 
 interface ProductItemProps {
@@ -465,31 +469,61 @@ export default function ProductItem({
         {/* Precio e Interacciones */}
         <div style={{ marginTop: '12px' }}>
           {/* Fila de precio e inventario */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px'
-            }}>
-              <div>
-                <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--secondary)' }}>
-                  ${product.price.toLocaleString('es-MX')} MXN
-                </span>
+          {(() => {
+            const tcgMarketUsd = product.pokemonCardData?.tcgplayer?.prices?.holofoil?.market || product.pokemonCardData?.tcgplayer?.prices?.normal?.market;
+            const effectiveMarketMxn = product.marketPrice || (tcgMarketUsd ? Math.round(tcgMarketUsd * 20) : null);
+            const savingsPercent = effectiveMarketMxn && effectiveMarketMxn > product.price 
+              ? Math.round(((effectiveMarketMxn - product.price) / effectiveMarketMxn) * 100) 
+              : null;
+
+            return (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '10px'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--secondary)' }}>
+                      ${product.price.toLocaleString('es-MX')} MXN
+                    </span>
+                    {savingsPercent && savingsPercent >= 5 && (
+                      <span style={{
+                        fontSize: '9.5px',
+                        padding: '2px 5px',
+                        borderRadius: '4px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                        color: '#34d399',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        fontWeight: 800
+                      }}>
+                        🔥 -{savingsPercent}%
+                      </span>
+                    )}
+                  </div>
+                  {effectiveMarketMxn && (
+                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '1px' }}>
+                      Mkt: ${effectiveMarketMxn.toLocaleString('es-MX')} MXN
+                    </span>
+                  )}
+                </div>
+                <div>
+                  {product.stock === 0 ? (
+                    <span style={{ fontSize: '11px', color: '#ff6b6b', fontWeight: 700 }}>Agotado</span>
+                  ) : product.stock <= 3 ? (
+                    <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>
+                      ⚡ {product.stock} {product.stock === 1 ? 'última pieza' : 'últimas piezas'}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: '#1ba24c', fontWeight: 600 }}>
+                      {product.stock} disponibles
+                    </span>
+                  )}
+                </div>
               </div>
-              <div>
-                {product.stock === 0 ? (
-                  <span style={{ fontSize: '11px', color: '#ff6b6b', fontWeight: 700 }}>Agotado</span>
-                ) : product.stock <= 3 ? (
-                  <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>
-                    ⚡ {product.stock} {product.stock === 1 ? 'última pieza' : 'últimas piezas'}
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '11px', color: '#1ba24c', fontWeight: 600 }}>
-                    {product.stock} disponibles
-                  </span>
-                )}
-              </div>
-            </div>
+            );
+          })()}
 
           {/* Botones de acción */}
           <div style={{ display: 'flex', gap: '8px' }}>

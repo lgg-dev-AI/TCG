@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { X, ShoppingCart, Info, ZoomIn, ShieldCheck } from 'lucide-react';
+import { X, ShoppingCart, ZoomIn, ShieldCheck, HelpCircle } from 'lucide-react';
 import type { Product } from './ProductItem';
+import MarketPriceHistory from './MarketPriceHistory';
+import ConditionGuideModal from './ConditionGuideModal';
 
 interface CardModalProps {
   product: Product | null;
@@ -13,6 +15,7 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomCoords, setZoomCoords] = useState<{ x: number; y: number; show: boolean }>({ x: 50, y: 50, show: false });
+  const [isConditionGuideOpen, setIsConditionGuideOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
   const [foilStyle, setFoilStyle] = useState<React.CSSProperties>({});
@@ -475,17 +478,26 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                     </span>
                   )}
                   {product.cardCondition && (
-                    <span style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: 'rgba(245, 158, 11, 0.12)',
-                      color: '#f59e0b',
-                      border: '1px solid rgba(245, 158, 11, 0.25)',
-                      fontWeight: 700
-                    }}>
+                    <button
+                      onClick={() => setIsConditionGuideOpen(true)}
+                      title="Ver Guía de Estados TCGplayer"
+                      style={{
+                        fontSize: '11px',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                        color: '#f59e0b',
+                        border: '1px solid rgba(245, 158, 11, 0.25)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
                       ✨ Condición: {product.cardCondition === 'NM' ? 'Near Mint (NM)' : product.cardCondition === 'LP' ? 'Lightly Played (LP)' : product.cardCondition === 'MP' ? 'Moderately Played (MP)' : 'Heavily Played (HP)'}
-                    </span>
+                      <HelpCircle size={12} style={{ opacity: 0.8 }} />
+                    </button>
                   )}
                   {product.pulledFrom && (
                     <span style={{
@@ -533,43 +545,11 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
                 </div>
               )}
 
-              {/* Precios de Referencia Mercado (TCGPlayer) */}
-              {isSingle && cardData?.tcgplayer?.prices && (
-                <div style={{
-                  backgroundColor: 'rgba(42, 117, 211, 0.08)',
-                  border: '1px solid rgba(42, 117, 211, 0.25)',
-                  borderRadius: '10px',
-                  padding: '16px',
-                  marginBottom: '24px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)', marginBottom: '8px' }}>
-                    <Info size={16} style={{ color: 'var(--accent-blue)' }} />
-                    <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Precios de Referencia del Mercado (USD / TCGPlayer)
-                    </span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', textAlign: 'center' }}>
-                    <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '6px' }}>
-                      <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Bajo</span>
-                      <span style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
-                        ${(cardData.tcgplayer.prices.holofoil?.low || cardData.tcgplayer.prices.normal?.low || 1).toFixed(2)}
-                      </span>
-                    </div>
-                    <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '6px' }}>
-                      <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Mercado</span>
-                      <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--secondary)' }}>
-                        ${(cardData.tcgplayer.prices.holofoil?.market || cardData.tcgplayer.prices.normal?.market || 2).toFixed(2)}
-                      </span>
-                    </div>
-                    <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '6px' }}>
-                      <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Alto</span>
-                      <span style={{ fontSize: '14px', fontWeight: 800, color: '#fff' }}>
-                        ${(cardData.tcgplayer.prices.holofoil?.high || cardData.tcgplayer.prices.normal?.high || 3).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Historial de Precios y Tendencias de Mercado (TCGplayer) */}
+              <MarketPriceHistory 
+                product={product} 
+                onOpenConditionGuide={() => setIsConditionGuideOpen(true)} 
+              />
             </div>
 
             {/* Fila de Compra */}
@@ -662,6 +642,12 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
           }
         }
       `}</style>
+
+      {/* Modal interactivo de Guía de Estados TCGplayer */}
+      <ConditionGuideModal 
+        isOpen={isConditionGuideOpen} 
+        onClose={() => setIsConditionGuideOpen(false)} 
+      />
     </div>
   );
 }

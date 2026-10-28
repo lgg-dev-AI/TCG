@@ -372,3 +372,129 @@ export const apiGetAdminLogs = async () => {
   return res.json();
 };
 
+// ========================
+// CATEGORÍAS & SUBCATEGORÍAS DINÁMICAS
+// ========================
+export interface CategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id?: string | null;
+  icon?: string;
+  color?: string;
+  order_index?: number;
+}
+
+export const DEFAULT_FALLBACK_CATEGORIES: CategoryItem[] = [
+  { id: 'cat_tcg', name: 'Cartas & TCGs', slug: 'tcg', parent_id: null, icon: 'Sparkles', color: '#ffcb05', order_index: 1 },
+  { id: 'cat_videogames', name: 'Videojuegos & Consolas', slug: 'videogames', parent_id: null, icon: 'Gamepad2', color: '#a855f7', order_index: 2 },
+  { id: 'cat_accessories', name: 'Accesorios & Protección', slug: 'accessories', parent_id: null, icon: 'ShieldCheck', color: '#3b82f6', order_index: 3 },
+  { id: 'cat_collectibles', name: 'Coleccionables & Figuras', slug: 'collectibles', parent_id: null, icon: 'Package', color: '#10b981', order_index: 4 },
+  // Subcategorías TCG
+  { id: 'sub_pokemon', name: 'Pokémon TCG', slug: 'pokemon', parent_id: 'cat_tcg', icon: 'Sparkles', color: '#ffcb05', order_index: 1 },
+  { id: 'sub_magic', name: 'Magic: The Gathering', slug: 'magic', parent_id: 'cat_tcg', icon: 'Flame', color: '#f97316', order_index: 2 },
+  { id: 'sub_yugioh', name: 'Yu-Gi-Oh!', slug: 'yugioh', parent_id: 'cat_tcg', icon: 'Swords', color: '#ef4444', order_index: 3 },
+  { id: 'sub_onepiece', name: 'One Piece Card Game', slug: 'onepiece', parent_id: 'cat_tcg', icon: 'Ship', color: '#06b6d4', order_index: 4 },
+  { id: 'sub_lorcana', name: 'Disney Lorcana', slug: 'lorcana', parent_id: 'cat_tcg', icon: 'Wand2', color: '#8b5cf6', order_index: 5 },
+  // Subcategorías Videojuegos
+  { id: 'sub_switch', name: 'Nintendo Switch', slug: 'switch', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#ef4444', order_index: 1 },
+  { id: 'sub_playstation', name: 'PlayStation (PS5 / PS4)', slug: 'playstation', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#2563eb', order_index: 2 },
+  { id: 'sub_xbox', name: 'Xbox Series & One', slug: 'xbox', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#16a34a', order_index: 3 },
+  { id: 'sub_retro', name: 'Retro Gaming (N64, GBA, SNES)', slug: 'retro', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#f59e0b', order_index: 4 },
+  // Subcategorías Accesorios
+  { id: 'sub_sleeves', name: 'Micas Protectoras (Sleeves)', slug: 'sleeves', parent_id: 'cat_accessories', icon: 'ShieldCheck', color: '#3b82f6', order_index: 1 },
+  { id: 'sub_binders', name: 'Carpetas & Portafolios (Binders)', slug: 'binders', parent_id: 'cat_accessories', icon: 'BookOpen', color: '#6366f1', order_index: 2 },
+  { id: 'sub_toploaders', name: 'Toploaders & Cajas Acrílicas', slug: 'toploaders', parent_id: 'cat_accessories', icon: 'Box', color: '#14b8a6', order_index: 3 },
+  { id: 'sub_playmats', name: 'Playmats & Tapetes Oficiales', slug: 'playmats', parent_id: 'cat_accessories', icon: 'Layers', color: '#ec4899', order_index: 4 }
+];
+
+export const apiGetCategories = async (): Promise<CategoryItem[]> => {
+  try {
+    const res = await fetch(`${API_BASE}/categories`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (e) {
+    console.warn('API /categories no disponible, usando respaldo local en memoria/storage:', e);
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    const local = localStorage.getItem('pv_custom_categories');
+    if (local) {
+      try {
+        return JSON.parse(local);
+      } catch {}
+    }
+  }
+  return DEFAULT_FALLBACK_CATEGORIES;
+};
+
+export const apiCreateCategory = async (catData: Partial<CategoryItem>): Promise<CategoryItem> => {
+  try {
+    const res = await fetch(`${API_BASE}/categories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(catData)
+    });
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('Error en API /categories, guardando localmente:', e);
+  }
+
+  // Fallback local
+  const current = await apiGetCategories();
+  const newCat: CategoryItem = {
+    id: 'cat_' + Date.now().toString(36),
+    name: catData.name || 'Nueva Categoría',
+    slug: (catData.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    parent_id: catData.parent_id || null,
+    icon: catData.icon || 'Package',
+    color: catData.color || '#3b82f6',
+    order_index: (catData.order_index ?? current.length) + 1
+  };
+  const updated = [...current, newCat];
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('pv_custom_categories', JSON.stringify(updated));
+  }
+  return newCat;
+};
+
+export const apiUpdateCategory = async (id: string, catData: Partial<CategoryItem>): Promise<CategoryItem> => {
+  try {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(catData)
+    });
+    if (res.ok) return res.json();
+  } catch (e) {
+    console.warn('Error en API /categories PUT, actualizando localmente:', e);
+  }
+
+  const current = await apiGetCategories();
+  const updated = current.map(c => c.id === id ? { ...c, ...catData } : c);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('pv_custom_categories', JSON.stringify(updated));
+  }
+  return updated.find(c => c.id === id) as CategoryItem;
+};
+
+export const apiDeleteCategory = async (id: string): Promise<void> => {
+  try {
+    const res = await fetch(`${API_BASE}/categories/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (res.ok) return;
+  } catch (e) {
+    console.warn('Error en API /categories DELETE, eliminando localmente:', e);
+  }
+
+  const current = await apiGetCategories();
+  const updated = current.filter(c => c.id !== id && c.parent_id !== id);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem('pv_custom_categories', JSON.stringify(updated));
+  }
+};
+

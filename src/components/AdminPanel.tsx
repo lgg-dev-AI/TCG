@@ -3,14 +3,15 @@ import {
   BarChart3, Package, ShoppingBag, Users, Plus, Tag, Settings2,
   Edit, Check, X, ShieldAlert, ChevronDown, ChevronUp, Clock, Truck, CheckCircle2,
   AlertTriangle, Upload, Banknote, Save, Trash2, Search, Loader2,
-  QrCode, Printer, Gamepad2, Smartphone, Sparkles, Copy
+  QrCode, Printer, Gamepad2, Smartphone, Sparkles, Copy, FolderTree, TrendingUp
 } from 'lucide-react';
 import type { Product } from './ProductItem';
 import type { UserData } from './AccountPanel';
-import { multiTcgSearch, fetchPokemonExpansionsForCard, type CardSearchResult } from '../services/multiTcgApi';
+import { multiTcgSearch, fetchPokemonExpansionsForCard, fetchCardPricingDetail, type CardSearchResult } from '../services/multiTcgApi';
 import { TCG_EXPANSIONS } from '../data/tcgExpansions';
-import { apiGetAdminLogs } from '../api';
+import { apiGetAdminLogs, apiGetCategories, type CategoryItem } from '../api';
 import { compressImage } from '../utils/imageCompressor';
+import CategoryManager from './CategoryManager';
 
 export interface OrderItem {
   productId: string;
@@ -116,13 +117,18 @@ export default function AdminPanel({
   onUpdateBankSettings,
   onRegisterManualSale
 }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'inventory' | 'sales' | 'customers' | 'coupons' | 'settings' | 'logs' | 'stand'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'inventory' | 'sales' | 'customers' | 'coupons' | 'settings' | 'logs' | 'stand' | 'categories'>('metrics');
   const [timeRange, setTimeRange] = useState<'today' | '7days' | 'month' | 'year' | 'all'>('7days');
   const [adminLogs, setAdminLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
   const [customerSearch, setCustomerSearch] = useState<string>('');
   const [customerPage, setCustomerPage] = useState<number>(1);
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string | null>(null);
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
+
+  useEffect(() => {
+    apiGetCategories().then(setCategoriesList).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'logs') {
@@ -139,6 +145,11 @@ export default function AdminPanel({
   const [newProdName, setNewProdName] = useState('');
   const [newProdPrice, setNewProdPrice] = useState(0);
   const [newProdCategory, setNewProdCategory] = useState<Product['category']>('booster_box');
+  const [newProdSubCategory, setNewProdSubCategory] = useState('');
+  const [newProdMarketPrice, setNewProdMarketPrice] = useState<number>(0);
+  const [newProdMarketPriceLow, setNewProdMarketPriceLow] = useState<number>(0);
+  const [newProdMarketPriceHigh, setNewProdMarketPriceHigh] = useState<number>(0);
+  const [marketPriceNotice, setMarketPriceNotice] = useState<string | null>(null);
   const [newProdImage, setNewProdImage] = useState('');
   const [newProdFileBase64, setNewProdFileBase64] = useState('');
   const [newProdFileName, setNewProdFileName] = useState('');
@@ -332,6 +343,10 @@ export default function AdminPanel({
   const [editProdCompleteness, setEditProdCompleteness] = useState('CIB (Completo en Caja)');
   const [editProdIsTournamentStaple, setEditProdIsTournamentStaple] = useState(false);
   const [editProdIsFirstEdition, setEditProdIsFirstEdition] = useState(false);
+  const [editProdSubCategory, setEditProdSubCategory] = useState('');
+  const [editProdMarketPrice, setEditProdMarketPrice] = useState<number>(0);
+  const [editProdMarketPriceLow, setEditProdMarketPriceLow] = useState<number>(0);
+  const [editProdMarketPriceHigh, setEditProdMarketPriceHigh] = useState<number>(0);
 
 
   // Helper to handle local file upload to Base64 with automatic WebP compression
@@ -423,6 +438,10 @@ export default function AdminPanel({
       completeness: newProdCategory === 'videogame' ? newProdCompleteness : undefined,
       isTournamentStaple: newProdIsTournamentStaple,
       isFirstEdition: newProdCategory === 'single' ? newProdIsFirstEdition : false,
+      subCategory: newProdSubCategory.trim() || undefined,
+      marketPrice: newProdMarketPrice > 0 ? newProdMarketPrice : undefined,
+      marketPriceLow: newProdMarketPriceLow > 0 ? newProdMarketPriceLow : undefined,
+      marketPriceHigh: newProdMarketPriceHigh > 0 ? newProdMarketPriceHigh : undefined,
       galleryImages: [finalImage, ...newProdGalleryImages].filter(Boolean).slice(0, 6)
     };
 
@@ -431,6 +450,11 @@ export default function AdminPanel({
     // Reset Form
     setNewProdName('');
     setNewProdPrice(0);
+    setNewProdSubCategory('');
+    setNewProdMarketPrice(0);
+    setNewProdMarketPriceLow(0);
+    setNewProdMarketPriceHigh(0);
+    setMarketPriceNotice(null);
     setNewProdImage('');
     setNewProdFileBase64('');
     setNewProdFileName('');
@@ -530,6 +554,10 @@ export default function AdminPanel({
     setEditProdCompleteness(p.completeness || 'CIB (Completo en Caja)');
     setEditProdIsTournamentStaple(!!p.isTournamentStaple);
     setEditProdIsFirstEdition(!!p.isFirstEdition);
+    setEditProdSubCategory(p.subCategory || '');
+    setEditProdMarketPrice(p.marketPrice || 0);
+    setEditProdMarketPriceLow(p.marketPriceLow || 0);
+    setEditProdMarketPriceHigh(p.marketPriceHigh || 0);
   };
 
   // Save edited product
@@ -586,6 +614,10 @@ export default function AdminPanel({
       completeness: editProdCategory === 'videogame' ? editProdCompleteness : undefined,
       isTournamentStaple: editProdIsTournamentStaple,
       isFirstEdition: editProdCategory === 'single' ? editProdIsFirstEdition : false,
+      subCategory: editProdSubCategory.trim() || undefined,
+      marketPrice: editProdMarketPrice > 0 ? editProdMarketPrice : undefined,
+      marketPriceLow: editProdMarketPriceLow > 0 ? editProdMarketPriceLow : undefined,
+      marketPriceHigh: editProdMarketPriceHigh > 0 ? editProdMarketPriceHigh : undefined,
       galleryImages: editingProduct.galleryImages
     });
 
@@ -613,16 +645,35 @@ export default function AdminPanel({
     }
   };
 
-  const handleSelectApiCard = (card: CardSearchResult) => {
+  const handleSelectApiCard = async (card: CardSearchResult) => {
     setNewProdName(card.name);
     setNewProdImage(card.images?.large || card.images?.small || '');
     setNewProdExpansion(card.set?.name || '');
     setNewProdDesc(`Carta oficial de ${newProdGameType}.`);
     
-    setNewProdPrice(card.marketPrice || 50);
+    let initialPrice = card.marketPrice || 50;
+    setNewProdPrice(initialPrice);
+    setNewProdMarketPrice(initialPrice);
+    setNewProdMarketPriceLow(Math.round(initialPrice * 0.8));
+    setNewProdMarketPriceHigh(Math.round(initialPrice * 1.4));
     
     // Clear results
     setApiSearchResults([]);
+
+    // Consultar precios de mercado en vivo de TCGplayer / Cardmarket
+    if (card.game_type === 'POKEMON' && card.id) {
+      setMarketPriceNotice('⏳ Consultando cotización en vivo de TCGplayer...');
+      const detail = await fetchCardPricingDetail(card.id);
+      if (detail && detail.marketPrice > 0) {
+        setNewProdMarketPrice(detail.marketPrice);
+        setNewProdMarketPriceLow(detail.marketPriceLow);
+        setNewProdMarketPriceHigh(detail.marketPriceHigh);
+        setNewProdPrice(detail.marketPrice);
+        setMarketPriceNotice(`✅ Cotización TCGplayer: $${detail.marketUsd.toFixed(2)} USD (~$${detail.marketPrice.toLocaleString('es-MX')} MXN). Precios de mercado auto-llenados.`);
+      } else {
+        setMarketPriceNotice(null);
+      }
+    }
   };
 
   // Helper to check if order falls in time range
@@ -941,6 +992,19 @@ export default function AdminPanel({
           }}
         >
           <QrCode size={15} /> 🎪 Modo Stand / Mercaditos
+        </button>
+        <button
+          onClick={() => setActiveTab('categories')}
+          className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
+          style={{
+            ...getTabStyle(activeTab === 'categories'),
+            borderColor: activeTab === 'categories' ? '#60a5fa' : 'rgba(96, 165, 250, 0.3)',
+            backgroundColor: activeTab === 'categories' ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.05)',
+            color: activeTab === 'categories' ? '#93c5fd' : '#60a5fa',
+            fontWeight: 700
+          }}
+        >
+          <FolderTree size={15} /> 📁 Categorías & Subcategorías
         </button>
       </div>
 
@@ -1438,6 +1502,25 @@ export default function AdminPanel({
                 </div>
               )}
 
+              {/* Aviso dinámico de cotización TCGplayer */}
+              {marketPriceNotice && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  color: '#93c5fd',
+                  fontSize: '12.5px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <TrendingUp size={16} color="#60a5fa" />
+                  <span>{marketPriceNotice}</span>
+                </div>
+              )}
+
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -1445,7 +1528,7 @@ export default function AdminPanel({
                 marginBottom: '16px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Nombre del Producto</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Nombre del Producto *</label>
                   <input
                     type="text"
                     required
@@ -1456,7 +1539,7 @@ export default function AdminPanel({
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Categoría</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Categoría *</label>
                   <select
                     value={newProdCategory}
                     onChange={(e) => setNewProdCategory(e.target.value as Product['category'])}
@@ -1470,8 +1553,26 @@ export default function AdminPanel({
                     <option value="videogame">🎮 Videojuego / Consola</option>
                   </select>
                 </div>
+
+                {/* Subcategoría Dinámica */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Precio (MXN)</label>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Subcategoría (Opcional)</label>
+                  <select
+                    value={newProdSubCategory}
+                    onChange={(e) => setNewProdSubCategory(e.target.value)}
+                    style={getFormInputStyle()}
+                  >
+                    <option value="">Sin subcategoría específica</option>
+                    {categoriesList.filter(c => c.parent_id).map(sub => (
+                      <option key={sub.id} value={sub.slug}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Precio de Venta PokéVault (MXN) *</label>
                   <input
                     type="number"
                     min={1}
@@ -1491,6 +1592,60 @@ export default function AdminPanel({
                     onChange={(e) => setNewProdStock(Number(e.target.value))}
                     style={getFormInputStyle()}
                   />
+                </div>
+              </div>
+
+              {/* Referencias de Mercado TCGplayer */}
+              <div style={{
+                marginBottom: '16px',
+                padding: '14px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.2)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                  <TrendingUp size={14} color="#60a5fa" />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#93c5fd', textTransform: 'uppercase' }}>
+                    Referencias de Mercado TCGplayer (Opcional - Para gráfico y comparativa)
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                      Precio Mercado TCGplayer (MXN)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="ej: 1200"
+                      value={newProdMarketPrice || ''}
+                      onChange={e => setNewProdMarketPrice(Number(e.target.value))}
+                      style={getFormInputStyle()}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                      Piso Mínimo (Low MXN)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="ej: 950"
+                      value={newProdMarketPriceLow || ''}
+                      onChange={e => setNewProdMarketPriceLow(Number(e.target.value))}
+                      style={getFormInputStyle()}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                      Techo Máximo (High MXN)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="ej: 1600"
+                      value={newProdMarketPriceHigh || ''}
+                      onChange={e => setNewProdMarketPriceHigh(Number(e.target.value))}
+                      style={getFormInputStyle()}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -4065,6 +4220,14 @@ export default function AdminPanel({
             </form>
           </div>
         </div>
+      )}
+
+      {/* TAB 9: GESTOR DE CATEGORÍAS & SUBCATEGORÍAS */}
+      {activeTab === 'categories' && (
+        <CategoryManager
+          inventory={inventory}
+          onCategoriesChanged={setCategoriesList}
+        />
       )}
 
       <style>{`

@@ -6,6 +6,7 @@ import productsRoutes from './routes/products.js';
 import ordersRoutes from './routes/orders.js';
 import buybackRoutes from './routes/buyback.js';
 import catalogRoutes from './routes/catalog.js';
+import categoriesRoutes from './routes/categories.js';
 import { startBackgroundJobs } from './jobs.js';
 
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/buyback', buybackRoutes);
 app.use('/api/catalog', catalogRoutes);
+app.use('/api/categories', categoriesRoutes);
 
 // Iniciar servidor
 app.listen(PORT, () => {

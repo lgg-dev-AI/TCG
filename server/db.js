@@ -67,7 +67,11 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
       )`);
 
       // Agregar columnas adicionales a productos de forma tolerante si ya existía la tabla
-      const productCols = ['region', 'pulled_from', 'card_condition', 'game_type', 'gallery_images', 'platform', 'completeness', 'is_tournament_staple', 'is_first_edition'];
+      const productCols = [
+        'region', 'pulled_from', 'card_condition', 'game_type', 'gallery_images', 
+        'platform', 'completeness', 'is_tournament_staple', 'is_first_edition',
+        'subcategory', 'market_price', 'market_price_low', 'market_price_high'
+      ];
       productCols.forEach(col => {
         db.run(`ALTER TABLE products ADD COLUMN ${col} TEXT DEFAULT ''`, (err) => {
           // Silenciosamente ignorar si la columna ya existe
@@ -162,6 +166,55 @@ const db = new sqlite3.Database(path.join(__dirname, 'database.sqlite'), (err) =
         image_url TEXT,
         market_price REAL DEFAULT 0
       )`);
+
+      // 12. Categorías y Subcategorías Dinámicas
+      db.run(`CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        parent_id TEXT DEFAULT NULL,
+        icon TEXT DEFAULT 'Package',
+        color TEXT DEFAULT '#3b82f6',
+        order_index INTEGER DEFAULT 0
+      )`);
+
+      // Seedar categorías iniciales si la tabla está vacía
+      db.get('SELECT COUNT(*) as count FROM categories', (err, row) => {
+        if (!err && row && row.count === 0) {
+          const initialCategories = [
+            // Principales
+            { id: 'cat_tcg', name: 'Cartas & TCGs', slug: 'tcg', parent_id: null, icon: 'Sparkles', color: '#ffcb05', order_index: 1 },
+            { id: 'cat_videogames', name: 'Videojuegos & Consolas', slug: 'videogames', parent_id: null, icon: 'Gamepad2', color: '#a855f7', order_index: 2 },
+            { id: 'cat_accessories', name: 'Accesorios & Protección', slug: 'accessories', parent_id: null, icon: 'ShieldCheck', color: '#3b82f6', order_index: 3 },
+            { id: 'cat_collectibles', name: 'Coleccionables & Figuras', slug: 'collectibles', parent_id: null, icon: 'Package', color: '#10b981', order_index: 4 },
+            // Subcategorías TCG
+            { id: 'sub_pokemon', name: 'Pokémon TCG', slug: 'pokemon', parent_id: 'cat_tcg', icon: 'Sparkles', color: '#ffcb05', order_index: 1 },
+            { id: 'sub_magic', name: 'Magic: The Gathering', slug: 'magic', parent_id: 'cat_tcg', icon: 'Flame', color: '#f97316', order_index: 2 },
+            { id: 'sub_yugioh', name: 'Yu-Gi-Oh!', slug: 'yugioh', parent_id: 'cat_tcg', icon: 'Swords', color: '#ef4444', order_index: 3 },
+            { id: 'sub_onepiece', name: 'One Piece Card Game', slug: 'onepiece', parent_id: 'cat_tcg', icon: 'Ship', color: '#06b6d4', order_index: 4 },
+            { id: 'sub_lorcana', name: 'Disney Lorcana', slug: 'lorcana', parent_id: 'cat_tcg', icon: 'Wand2', color: '#8b5cf6', order_index: 5 },
+            // Subcategorías Videojuegos
+            { id: 'sub_switch', name: 'Nintendo Switch', slug: 'switch', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#ef4444', order_index: 1 },
+            { id: 'sub_playstation', name: 'PlayStation (PS5 / PS4)', slug: 'playstation', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#2563eb', order_index: 2 },
+            { id: 'sub_xbox', name: 'Xbox Series & One', slug: 'xbox', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#16a34a', order_index: 3 },
+            { id: 'sub_retro', name: 'Retro Gaming (N64, GBA, SNES)', slug: 'retro', parent_id: 'cat_videogames', icon: 'Gamepad2', color: '#f59e0b', order_index: 4 },
+            // Subcategorías Accesorios
+            { id: 'sub_sleeves', name: 'Micas Protectoras (Sleeves)', slug: 'sleeves', parent_id: 'cat_accessories', icon: 'ShieldCheck', color: '#3b82f6', order_index: 1 },
+            { id: 'sub_binders', name: 'Carpetas & Portafolios (Binders)', slug: 'binders', parent_id: 'cat_accessories', icon: 'BookOpen', color: '#6366f1', order_index: 2 },
+            { id: 'sub_toploaders', name: 'Toploaders & Cajas Acrílicas', slug: 'toploaders', parent_id: 'cat_accessories', icon: 'Box', color: '#14b8a6', order_index: 3 },
+            { id: 'sub_playmats', name: 'Playmats & Tapetes Oficiales', slug: 'playmats', parent_id: 'cat_accessories', icon: 'Layers', color: '#ec4899', order_index: 4 }
+          ];
+
+          initialCategories.forEach(cat => {
+            db.run(
+              `INSERT OR IGNORE INTO categories (id, name, slug, parent_id, icon, color, order_index)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [cat.id, cat.name, cat.slug, cat.parent_id, cat.icon, cat.color, cat.order_index]
+            );
+          });
+          console.log('🌱 Base de datos seedada con categorías y subcategorías iniciales.');
+        }
+      });
 
       // Seedar configuraciones de banco si está vacía
       db.get('SELECT COUNT(*) as count FROM settings', (err, row) => {

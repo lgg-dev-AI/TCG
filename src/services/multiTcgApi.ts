@@ -79,6 +79,37 @@ export const fetchPokemonExpansionsForCard = async (pokemonName: string): Promis
   }
 };
 
+// Helper para obtener precios detallados de TCGplayer y Cardmarket para una carta específica
+export const fetchCardPricingDetail = async (cardId: string): Promise<{
+  marketPrice: number;
+  marketPriceLow: number;
+  marketPriceHigh: number;
+  marketUsd: number;
+} | null> => {
+  try {
+    const res = await fetch(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(cardId)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const tcg = data.pricing?.tcgplayer;
+    const cardmarket = data.pricing?.cardmarket;
+    const variant = tcg?.['holofoil'] || tcg?.['reverse-holofoil'] || tcg?.normal;
+
+    const usdPrice = variant?.marketPrice || (cardmarket?.avg30 ? cardmarket.avg30 * 1.08 : 0);
+    const lowUsd = variant?.lowPrice || (cardmarket?.low ? cardmarket.low * 1.08 : 0);
+    const highUsd = variant?.highPrice || (usdPrice * 1.4);
+
+    return {
+      marketUsd: usdPrice,
+      marketPrice: Math.round(usdPrice * 20),
+      marketPriceLow: Math.round(lowUsd * 20),
+      marketPriceHigh: Math.round(highUsd * 20)
+    };
+  } catch (e) {
+    console.warn('Error obteniendo precios de mercado TCGplayer:', e);
+    return null;
+  }
+};
+
 // Interfaz adaptadora para múltiples TCGs con caché ultrarrápido
 export const multiTcgSearch = async (query: string, gameType: string, expansion?: string): Promise<CardSearchResult[]> => {
   const cleanName = (query || '').trim().replace(/[*"]/g, '');
@@ -93,12 +124,43 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
   try {
     switch (gameType) {
       case 'POKEMON': {
-        let q = '';
+        // 1. Intentar primero con TCGdex (gratuita, sin API key, con TCGplayer pricing y CDN ultrarrápido)
+        if (cleanName) {
+          try {
+            const tcgdexUrl = `https://api.tcgdex.net/v2/en/cards?name=${encodeURIComponent(cleanName)}`;
+            const dexRes = await fetch(tcgdexUrl);
+            if (dexRes.ok) {
+              const dexCards: any[] = await dexRes.json();
+              if (Array.isArray(dexCards) && dexCards.length > 0) {
+                const mapped: CardSearchResult[] = dexCards.slice(0, 40).map(c => ({
+                  id: c.id,
+                  name: c.name,
+                  images: {
+                    small: c.image ? `${c.image}/low.webp` : '',
+                    large: c.image ? `${c.image}/high.webp` : ''
+                  },
+                  set: {
+                    id: c.id.split('-')[0] || 'set',
+                    name: cleanExpansion || 'Pokémon Official'
+                  },
+                  game_type: 'POKEMON',
+                  marketPrice: 0 // Se resuelve dinámicamente
+                }));
 
+                setCached(cacheKey, mapped);
+                return mapped;
+              }
+            }
+          } catch (dexErr) {
+            console.warn('TCGdex fallback a pokemontcg.io:', dexErr);
+          }
+        }
+
+        // 2. Fallback a pokemontcg.io si TCGdex no arrojó resultados o la consulta es general
+        let q = '';
         if (cleanName) {
           q = `name:"${cleanName}"`;
         } else {
-          // Si no se especifica nombre de carta (o se busca todas las expansiones), traer cartas oficiales de Pokémon
           q = 'supertype:pokemon';
         }
 
@@ -108,9 +170,6 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
         const data = await response.json();
         
         let results = data.data || [];
-        
-        // Si se especificó una expansión en particular, filtrar por ese sobre.
-        // Si cleanExpansion está vacío ("Todas las expansiones"), se devuelven cartas de TODAS las expansiones.
         if (cleanExpansion) {
           const lowerExp = cleanExpansion.toLowerCase();
           results = results.filter((card: any) => 
@@ -124,7 +183,9 @@ export const multiTcgSearch = async (query: string, gameType: string, expansion?
           images: { small: card.images?.small || '', large: card.images?.large || card.images?.small || '' },
           set: { id: card.set?.id || 'unknown', name: card.set?.name || cleanExpansion || 'Base' },
           game_type: 'POKEMON',
-          marketPrice: card.cardmarket?.prices?.averageSellPrice || 0
+          marketPrice: card.tcgplayer?.prices?.holofoil?.market 
+            ? Math.round(card.tcgplayer.prices.holofoil.market * 20) 
+            : (card.cardmarket?.prices?.averageSellPrice ? Math.round(card.cardmarket.prices.averageSellPrice * 20) : 0)
         }));
 
         setCached(cacheKey, mapped);

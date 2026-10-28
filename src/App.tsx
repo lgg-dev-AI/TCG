@@ -53,6 +53,10 @@ const mapProductFromDB = (p: any): Product => ({
   completeness: p.completeness || '',
   isTournamentStaple: !!p.is_tournament_staple,
   isFirstEdition: !!p.is_first_edition || !!p.isFirstEdition,
+  subCategory: p.subcategory || p.subCategory || '',
+  marketPrice: p.market_price ? Number(p.market_price) : (p.marketPrice ? Number(p.marketPrice) : undefined),
+  marketPriceLow: p.market_price_low ? Number(p.market_price_low) : (p.marketPriceLow ? Number(p.marketPriceLow) : undefined),
+  marketPriceHigh: p.market_price_high ? Number(p.market_price_high) : (p.marketPriceHigh ? Number(p.marketPriceHigh) : undefined),
   galleryImages: p.gallery_images ? (typeof p.gallery_images === 'string' ? JSON.parse(p.gallery_images) : p.gallery_images) : (p.galleryImages || [])
 });
 
@@ -345,6 +349,10 @@ export default function App() {
         completeness: updates.completeness,
         is_tournament_staple: updates.isTournamentStaple,
         is_first_edition: updates.isFirstEdition,
+        subcategory: updates.subCategory,
+        market_price: updates.marketPrice,
+        market_price_low: updates.marketPriceLow,
+        market_price_high: updates.marketPriceHigh,
         gallery_images: updates.galleryImages ? JSON.stringify(updates.galleryImages) : undefined
       };
       await apiUpdateProduct(productId, payload);
@@ -373,6 +381,10 @@ export default function App() {
         completeness: newProduct.completeness,
         is_tournament_staple: newProduct.isTournamentStaple,
         is_first_edition: newProduct.isFirstEdition,
+        subcategory: newProduct.subCategory,
+        market_price: newProduct.marketPrice,
+        market_price_low: newProduct.marketPriceLow,
+        market_price_high: newProduct.marketPriceHigh,
         gallery_images: newProduct.galleryImages ? JSON.stringify(newProduct.galleryImages) : undefined
       };
       const res = await apiCreateProduct(payload);
