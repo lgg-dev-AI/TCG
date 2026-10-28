@@ -4,6 +4,9 @@ import { authenticate, requireAdmin } from './auth.js';
 import { randomUUID } from 'crypto';
 import nodemailer from 'nodemailer';
 
+import jwt from 'jsonwebtoken';
+const JWT_SECRET = process.env.JWT_SECRET || 'pokevault_super_secret_dev_key';
+
 const router = express.Router();
 
 // Configurar transportador de correo para envío real
@@ -25,13 +28,52 @@ const transporter = process.env.SMTP_SERVICE
       },
     });
 
-// POST /api/orders - Realizar Checkout (Bloqueo transaccional simulado en SQLite)
-router.post('/', authenticate, async (req, res) => {
-  const { cartItems, paymentMethod, paymentReceipt } = req.body;
-  const userId = req.user.id;
+// POST /api/orders - Realizar Checkout (Permite usuarios autenticados y compras directas como invitado)
+router.post('/', async (req, res) => {
+  const { cartItems, paymentMethod, paymentReceipt, customerName, customerEmail, customerPhone, shippingAddress } = req.body;
 
   if (!cartItems || cartItems.length === 0) {
     return res.status(400).json({ error: 'El carrito está vacío' });
+  }
+
+  // 1. Obtener ID de usuario: desde token JWT o buscar/crear usuario invitado
+  let userId = null;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+      userId = decoded.id;
+    } catch {}
+  }
+
+  const emailToUse = (customerEmail || 'cliente@pokevault.mx').toLowerCase().trim();
+
+  if (!userId) {
+    try {
+      let existing = await get('SELECT id FROM users WHERE email = ?', [emailToUse]);
+      if (existing) {
+        userId = existing.id;
+      } else {
+        userId = 'usr_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        await run(
+          'INSERT INTO users (id, email, name, role, phone, city, state, street, zip_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            userId,
+            emailToUse,
+            customerName || 'Cliente PokéVault',
+            'CUSTOMER',
+            customerPhone || '',
+            shippingAddress?.city || '',
+            shippingAddress?.state || '',
+            shippingAddress?.street || '',
+            shippingAddress?.zipCode || ''
+          ]
+        );
+      }
+    } catch (userErr) {
+      console.warn('Error al verificar/crear usuario en checkout:', userErr);
+      userId = 'usr_guest_checkout';
+    }
   }
 
   try {
@@ -117,7 +159,7 @@ router.post('/', authenticate, async (req, res) => {
 
     // Obtener correo del usuario
     const user = await get('SELECT email FROM users WHERE id = ?', [userId]);
-    const userEmail = user ? user.email : 'entrenador@pokevault.mx';
+    const userEmail = user ? user.email : emailToUse;
 
     // Generar cuerpo HTML de correo con colores de Pokébola y datos bancarios dinámicos
     const emailHtmlBody = `

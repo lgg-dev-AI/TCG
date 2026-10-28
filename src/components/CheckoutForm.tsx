@@ -142,7 +142,19 @@ export default function CheckoutForm({
               quantity: item.quantity
             }));
             
-            const res = await apiCheckout(items, 'PayPal', transactionId);
+            const res = await apiCheckout(items, 'PayPal', transactionId, {
+              name: name.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              address: {
+                street: address.trim(),
+                city: city.trim(),
+                state: state.trim(),
+                zipCode: zip.trim()
+              },
+              total: total,
+              discountApplied: discountPercent
+            });
             setOrderNumber(res.orderId);
             setSimulatedEmail(res.simulatedEmail);
 
@@ -252,7 +264,19 @@ export default function CheckoutForm({
       quantity: item.quantity
     }));
 
-    apiCheckout(items)
+    apiCheckout(items, paymentMethod, receiptBase64, {
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      address: {
+        street: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zipCode: zip.trim()
+      },
+      total: total,
+      discountApplied: discountPercent
+    })
       .then(async (res) => {
         setOrderNumber(res.orderId);
         setSimulatedEmail(res.simulatedEmail);
