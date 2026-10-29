@@ -14,6 +14,9 @@ import AccountPanel from './components/AccountPanel';
 import type { UserData } from './components/AccountPanel';
 import AdminPanel from './components/AdminPanel';
 import type { Order, Coupon, BuybackRequest } from './components/AdminPanel';
+import BottomNav from './components/BottomNav';
+import CategoriesSheet from './components/CategoriesSheet';
+import MobileSearchModal from './components/MobileSearchModal';
 
 import {
   apiGetProducts,
@@ -220,6 +223,8 @@ export default function App() {
 
   // Estados de modales
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [categoriesSheetOpen, setCategoriesSheetOpen] = useState<boolean>(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState<boolean>(false);
 
   // Estados de API y Autenticación
   const [currentUser, setCurrentUser] = useState<string | null>(null);
@@ -640,6 +645,7 @@ export default function App() {
         onConfigureBar={() => {
           navigateTo('/admin');
         }}
+        onOpenSearch={() => setMobileSearchOpen(true)}
       />
 
       {/* Contenido Principal */}
@@ -815,6 +821,52 @@ export default function App() {
         isOpen={loginOpen}
         onClose={() => setLoginOpen(false)}
         onSuccess={handleLogin}
+      />
+
+      {/* Barra de Navegación Móvil Inferior (Estilo App) */}
+      <BottomNav
+        currentSection={currentSection}
+        onNavigateSection={(sec) => {
+          setSearchQuery('');
+          if (sec === 'home') navigateTo('/');
+          else if (sec === 'catalog') navigateTo('/tienda');
+          else if (sec === 'account') {
+            if (currentUser) navigateTo('/cuenta');
+            else setLoginOpen(true);
+          }
+        }}
+        cartCount={cartCount}
+        onOpenCart={() => setCartOpen(true)}
+        onOpenCategories={() => setCategoriesSheetOpen(true)}
+        onOpenSearch={() => setMobileSearchOpen(true)}
+        currentUser={currentUser}
+        isAdmin={dbUserData?.role === 'ADMIN' || !!currentUser?.toLowerCase().includes('admin')}
+        onUserClick={() => {
+          if (!currentUser) setLoginOpen(true);
+          else if (dbUserData?.role === 'ADMIN' || !!currentUser?.toLowerCase().includes('admin')) navigateTo('/admin');
+          else navigateTo('/cuenta');
+        }}
+      />
+
+      {/* Bottom Sheet de Categorías para Móvil */}
+      <CategoriesSheet
+        isOpen={categoriesSheetOpen}
+        onClose={() => setCategoriesSheetOpen(false)}
+        onNavigate={navigateTo}
+      />
+
+      {/* Buscador Rápido en Pantalla Completa para Móvil */}
+      <MobileSearchModal
+        isOpen={mobileSearchOpen}
+        onClose={() => setMobileSearchOpen(false)}
+        products={inventory}
+        onSelectProduct={(prod) => {
+          setSelectedProduct(prod);
+        }}
+        onSearchSubmit={(q) => {
+          setSearchQuery(q);
+          navigateTo('/tienda');
+        }}
       />
 
       {/* Pie de Página Premium */}

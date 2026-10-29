@@ -24,6 +24,7 @@ interface NavbarProps {
   onSelectCategory?: (category: string) => void;
   onSelectDeals?: () => void;
   onConfigureBar?: () => void;
+  onOpenSearch?: () => void;
 }
 
 export default function Navbar({
@@ -47,6 +48,7 @@ export default function Navbar({
   onSelectCategory,
   onSelectDeals,
   onConfigureBar,
+  onOpenSearch,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -218,7 +220,29 @@ export default function Navbar({
         </nav>
 
         {/* Acciones del Navbar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Botón Búsqueda Rápida Móvil */}
+          <button
+            onClick={onOpenSearch}
+            className="search-btn-mobile"
+            style={{
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-main)',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title="Buscar"
+          >
+            <Search size={18} />
+          </button>
+
           {/* Botón Carrito */}
           <button
             onClick={onCartToggle}
@@ -357,20 +381,22 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Barra de Contenido Compacta con 3 Menús Desplegables */}
-      <ContentBar
-        activeGame={activeGame}
-        catalogCategory={catalogCategory}
-        selectedPlatform={selectedPlatform}
-        selectedAccessory={selectedAccessory}
-        onNavigate={onNavigate || ((path, opts) => {
-          if (opts?.game) onGameChange?.(opts.game);
-          if (opts?.category) onSelectCategory?.(opts.category);
-          if (path === '/ofertas') onSelectDeals?.();
-        })}
-        isAdmin={isAdmin}
-        onConfigureBar={onConfigureBar}
-      />
+      {/* Barra de Contenido Compacta con 3 Menús Desplegables (Visible en Escritorio, en Móvil se accede desde Explorar) */}
+      <div className="content-bar-sticky-wrapper">
+        <ContentBar
+          activeGame={activeGame}
+          catalogCategory={catalogCategory}
+          selectedPlatform={selectedPlatform}
+          selectedAccessory={selectedAccessory}
+          onNavigate={onNavigate || ((path, opts) => {
+            if (opts?.game) onGameChange?.(opts.game);
+            if (opts?.category) onSelectCategory?.(opts.category);
+            if (path === '/ofertas') onSelectDeals?.();
+          })}
+          isAdmin={isAdmin}
+          onConfigureBar={onConfigureBar}
+        />
+      </div>
 
       {/* Menú Desplegable Móvil */}
       {mobileMenuOpen && (

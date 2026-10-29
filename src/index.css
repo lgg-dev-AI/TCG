@@ -400,3 +400,67 @@ a {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ============================================================== */
+/* OPTIMIZACIONES UX & IT PARA DISPOSITIVOS MÓVILES (<= 768px)    */
+/* ============================================================== */
+
+/* Regla Anti-Zoom de iOS Safari: Mínimo 16px en todos los inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Mostrar la Barra Inferior Táctil (App-Style) */
+  .bottom-nav-mobile {
+    display: flex !important;
+  }
+
+  /* Ocultar ContentBar sticky superior pesado en móviles para liberar pantalla */
+  .content-bar-sticky-wrapper {
+    display: none !important;
+  }
+
+  /* Mostrar botón de búsqueda directa en el navbar móvil */
+  .search-btn-mobile {
+    display: flex !important;
+  }
+
+  /* Ajustar padding inferior del contenedor principal para que la bottom bar no cubra contenido */
+  main.container {
+    padding-bottom: calc(75px + env(safe-area-inset-bottom, 16px)) !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  /* Ergonomía táctil: botones interactivos con touch target mínimo de 44px */
+  .btn, .nav-btn, button.interactive-target {
+    min-height: 44px;
+  }
+
+  /* Ocultar sidebar largo de filtros en móvil para evitar scroll fatigue */
+  .catalog-filters-desktop {
+    display: none !important;
+  }
+
+  /* Mostrar la barra sticky de filtros y ordenamiento en móvil */
+  .catalog-filters-mobile-trigger {
+    display: flex !important;
+  }
+}
+
+/* En pantallas grandes (> 768px), ocultar el trigger móvil de filtros */
+@media screen and (min-width: 769px) {
+  .catalog-filters-mobile-trigger {
+    display: none !important;
+  }
+  .search-btn-mobile {
+    display: none !important;
+  }
+}
+

@@ -90,9 +90,9 @@ export default function Home({
     const xc = rect.width / 2;
     const yc = rect.height / 2;
     
-    // Rotación máxima de 15 grados
-    const rotateX = -((y - yc) / yc) * 15;
-    const rotateY = ((x - xc) / xc) * 15;
+    // Rotación suave y amortiguada (máx 8 grados)
+    const rotateX = -((y - yc) / yc) * 8;
+    const rotateY = ((x - xc) / xc) * 8;
 
     // Calcular porcentajes para la iluminación del gradiente
     const px = (x / rect.width) * 100;
@@ -100,13 +100,13 @@ export default function Home({
 
     setStyle({
       transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-      transition: 'none'
+      transition: 'transform 0.08s ease-out'
     });
 
     setShineStyle({
-      opacity: 0.7,
+      opacity: 0.6,
       background: `radial-gradient(circle at ${px}% ${py}%, rgba(255,255,255,0.2) 0%, rgba(255,203,5,0.15) 30%, rgba(255,62,62,0.15) 60%, rgba(0,0,0,0) 80%)`,
-      transition: 'none'
+      transition: 'opacity 0.2s ease'
     });
   };
 

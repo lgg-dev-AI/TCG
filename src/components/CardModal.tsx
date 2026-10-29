@@ -43,14 +43,15 @@ export default function CardModal({ product, onClose, onAddToCart }: CardModalPr
     const w = rect.width;
     const h = rect.height;
 
-    const rotateX = ((y / h) - 0.5) * -22;
-    const rotateY = ((x / w) - 0.5) * 22;
+    // Rotación calibrada y suave (máx 12 grados para evitar distorsión)
+    const rotateX = ((y / h) - 0.5) * -12;
+    const rotateY = ((x / w) - 0.5) * 12;
     const foilX = (x / w) * 100;
     const foilY = (y / h) * 100;
 
     setTiltStyle({
       transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`,
-      transition: 'transform 0.05s ease-out',
+      transition: 'transform 0.08s ease-out',
     });
 
     setFoilStyle({

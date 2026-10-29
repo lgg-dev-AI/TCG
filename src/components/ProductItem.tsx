@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ShoppingCart, Eye, Sparkles, Heart } from 'lucide-react';
 import type { PokemonCard } from '../services/api';
 
@@ -43,52 +43,9 @@ export default function ProductItem({
   isFavorite,
   onToggleFavorite
 }: ProductItemProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
-  const [foilStyle, setFoilStyle] = useState<React.CSSProperties>({});
+  const [isHovered, setIsHovered] = useState(false);
 
   const isSingle = product.category === 'single';
-
-  // Efecto 3D interactivo holográfico para cartas sueltas
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isSingle || !cardRef.current) return;
-
-    const el = cardRef.current;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left; // posición x del ratón en la carta
-    const y = e.clientY - rect.top;  // posición y del ratón en la carta
-    const w = rect.width;
-    const h = rect.height;
-
-    // Calcular rotaciones (máximo 15 grados)
-    const rotateX = ((y / h) - 0.5) * -30;
-    const rotateY = ((x / w) - 0.5) * 30;
-
-    // Calcular posición del reflejo holográfico
-    const foilX = (x / w) * 100;
-    const foilY = (y / h) * 100;
-
-    setTiltStyle({
-      transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`,
-      transition: 'transform 0.05s ease-out',
-    });
-
-    setFoilStyle({
-      opacity: 0.65,
-      backgroundPosition: `${foilX}% ${foilY}%`,
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setTiltStyle({
-      transform: 'rotateX(0deg) rotateY(0deg) scale(1)',
-      transition: 'transform 0.3s ease',
-    });
-    setFoilStyle({
-      opacity: 0,
-      transition: 'all 0.3s ease',
-    });
-  };
 
   // Obtener clase de rareza para el brillo dorado de fondo
   const isRare = isSingle && 
@@ -97,32 +54,32 @@ export default function ProductItem({
 
   return (
     <div 
-      className="glass" 
+      className="glass product-card-hover" 
       style={{
         borderRadius: '12px',
         padding: '16px',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'all 0.3s ease',
-        border: product.isPromo ? '1px solid var(--secondary)' : '1px solid var(--border-color)',
+        transition: 'all 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+        border: product.isPromo 
+          ? '1px solid var(--secondary)' 
+          : isHovered 
+            ? '1px solid rgba(255, 203, 5, 0.45)' 
+            : '1px solid var(--border-color)',
         height: '100%',
         justifyContent: 'space-between',
-        position: 'relative'
+        position: 'relative',
+        transform: isHovered ? 'translateY(-5px)' : 'translateY(0)',
+        boxShadow: isHovered 
+          ? (isRare || product.isPromo 
+              ? '0 12px 28px rgba(0,0,0,0.6), 0 0 16px rgba(255, 203, 5, 0.22)' 
+              : '0 12px 26px rgba(0,0,0,0.55), 0 0 12px rgba(255, 62, 62, 0.15)')
+          : 'var(--shadow-sm)',
+        cursor: 'pointer'
       }}
-      onMouseEnter={(e) => {
-        if (!isSingle) {
-          e.currentTarget.style.transform = 'translateY(-6px)';
-          e.currentTarget.style.borderColor = 'rgba(255, 62, 62, 0.3)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSingle) {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.borderColor = 'var(--border-color)';
-          e.currentTarget.style.boxShadow = 'none';
-        }
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => onViewDetails(product)}
     >
       {/* Botón de Favorito */}
       <button
@@ -285,34 +242,57 @@ export default function ProductItem({
           justifyContent: 'center',
           marginBottom: '16px',
           aspectRatio: isSingle ? '2.5 / 3.5' : '1 / 1',
-          overflow: 'visible',
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '10px'
         }}
       >
         {isSingle ? (
-          /* Contenedor 3D para la carta Pokémon */
+          /* Presentación elegante y uniforme para carta coleccionable */
           <div 
-            className="card-3d-wrapper"
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              borderRadius: '10px',
+            }}
           >
+            <img 
+              src={product.image} 
+              alt={product.name} 
+              loading="lazy" 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease',
+                transform: isHovered ? 'scale(1.035)' : 'scale(1)',
+                filter: isHovered 
+                  ? (isRare ? 'drop-shadow(0 4px 12px rgba(255,203,5,0.35))' : 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))') 
+                  : 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))'
+              }}
+            />
+            {/* Destello holográfico sutil en hover */}
             <div 
-              className={`card-3d ${isRare ? 'rare-glow' : ''}`}
-              ref={cardRef}
-              style={tiltStyle}
-            >
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                loading="lazy" 
-                style={{
-                  border: '1px solid rgba(255,255,255,0.05)'
-                }}
-              />
-              <div 
-                className="card-foil-overlay" 
-                style={foilStyle}
-              />
-            </div>
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                borderRadius: '8px',
+                pointerEvents: 'none',
+                opacity: isHovered ? 0.35 : 0,
+                transition: 'opacity 0.3s ease',
+                background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.4) 48%, rgba(255,203,5,0.3) 55%, transparent 70%)',
+                backgroundSize: '200% 200%'
+              }}
+            />
           </div>
         ) : (
           /* Imagen estándar para producto sellado */

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Filter, HelpCircle, TrendingUp, 
-  Sparkles, Gamepad2, ShieldCheck, RotateCcw, ChevronRight
+  Sparkles, Gamepad2, ShieldCheck, RotateCcw, ChevronRight, X
 } from 'lucide-react';
 import ProductItem from './ProductItem';
 import type { Product } from './ProductItem';
@@ -62,6 +62,7 @@ export default function ProductCatalog({
   const [maxPrice, setMaxPrice] = useState<number>(100000);
   const [onlyDealsFilter, setOnlyDealsFilter] = useState<boolean>(false);
   const [isConditionGuideOpen, setIsConditionGuideOpen] = useState<boolean>(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState<boolean>(false);
   const [, setCategoriesList] = useState<CategoryItem[]>([]);
 
   useEffect(() => {
@@ -326,6 +327,19 @@ export default function ProductCatalog({
     setOnlyDealsFilter(false);
   };
 
+  const activeFilterCount = (
+    (selectedType !== 'all' ? 1 : 0) +
+    (selectedRarity !== 'all' ? 1 : 0) +
+    (selectedRegion !== 'all' ? 1 : 0) +
+    (selectedCondition !== 'all' ? 1 : 0) +
+    (selectedEdition !== 'all' ? 1 : 0) +
+    (expansionFilter ? 1 : 0) +
+    (onlyDealsFilter ? 1 : 0) +
+    (maxPrice < 100000 ? 1 : 0) +
+    (selectedPlatform !== 'all' ? 1 : 0) +
+    (selectedAccessoryType !== 'all' ? 1 : 0)
+  );
+
   return (
     <div style={{ paddingBottom: '60px' }}>
       {/* Migas de Pan (Breadcrumbs) para Vistas Dedicadas */}
@@ -584,6 +598,62 @@ export default function ProductCatalog({
         )}
       </div>
 
+      {/* Barra de Filtro Móvil Táctil */}
+      <div 
+        className="catalog-filters-mobile-trigger"
+        style={{
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          marginBottom: '16px',
+          backgroundColor: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '10px'
+        }}
+      >
+        <button
+          onClick={() => setMobileFiltersOpen(true)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: activeFilterCount > 0 ? 'var(--primary)' : 'rgba(255, 255, 255, 0.08)',
+            color: '#ffffff',
+            border: activeFilterCount > 0 ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+            borderRadius: '8px',
+            padding: '8px 14px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer'
+          }}
+        >
+          <Filter size={15} />
+          <span>Filtrar y Ordenar {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
+        </button>
+
+        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+          {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+        </span>
+      </div>
+
+      {/* Backdrop oscuro cuando el Bottom Sheet de filtros está abierto en móvil */}
+      {mobileFiltersOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(5px)',
+            zIndex: 1040
+          }}
+          onClick={() => setMobileFiltersOpen(false)}
+        />
+      )}
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr',
@@ -592,11 +662,30 @@ export default function ProductCatalog({
         {/* ============================================================== */}
         {/* FILTROS SIDEBAR / TOPBAR CONTEXTUALES */}
         {/* ============================================================== */}
-        <div className="glass" style={{
-          padding: '20px',
-          borderRadius: '12px',
-          height: 'fit-content',
-        }}>
+        <div 
+          className={`glass ${mobileFiltersOpen ? 'mobile-filters-active-sheet' : 'catalog-filters-desktop'}`}
+          style={mobileFiltersOpen ? {
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1050,
+            backgroundColor: '#0c1017',
+            borderTopLeftRadius: '20px',
+            borderTopRightRadius: '20px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            padding: '20px',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.85)',
+            animation: 'slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+            paddingBottom: 'env(safe-area-inset-bottom, 20px)'
+          } : {
+            padding: '20px',
+            borderRadius: '12px',
+            height: 'fit-content',
+          }}
+        >
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -617,6 +706,27 @@ export default function ProductCatalog({
                     : 'Filtros TCG'}
               </h3>
             </div>
+
+            {/* Si está abierto en móvil, botón para cerrar */}
+            {mobileFiltersOpen && (
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={16} />
+              </button>
+            )}
 
             {/* Acciones Rápidas */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -974,6 +1084,36 @@ export default function ProductCatalog({
               </div>
             </div>
           </div>
+
+          {/* Botón Aplicar Filtros en Móvil */}
+          {mobileFiltersOpen && (
+            <div style={{
+              position: 'sticky',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              margin: '20px -20px -20px -20px',
+              padding: '14px 20px',
+              backgroundColor: '#0a0d14',
+              borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+              zIndex: 10
+            }}>
+              <button
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 800,
+                  minHeight: '46px'
+                }}
+                onClick={() => setMobileFiltersOpen(false)}
+              >
+                Ver {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ============================================================== */}
