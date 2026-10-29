@@ -388,9 +388,9 @@ export default function ProductCatalog({
       {/* ============================================================== */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '12px',
-        marginBottom: '16px',
+        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+        gap: '8px',
+        marginBottom: '12px',
       }}>
         <button
           onClick={() => {
@@ -402,21 +402,25 @@ export default function ProductCatalog({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px',
+            gap: '6px',
             backgroundColor: mainPillar === 'tcg' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.04)',
             color: '#ffffff',
             border: mainPillar === 'tcg' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-            padding: '12px 18px',
+            padding: '10px 8px',
             borderRadius: '10px',
-            fontSize: '14px',
+            fontSize: '12.5px',
             fontWeight: 800,
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            minWidth: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             boxShadow: mainPillar === 'tcg' ? '0 4px 14px rgba(255, 62, 62, 0.35)' : 'none'
           }}
         >
-          <Sparkles size={16} color={mainPillar === 'tcg' ? '#fff' : '#ffcb05'} />
-          <span>🃏 TCG & Cartas Coleccionables</span>
+          <Sparkles size={15} color={mainPillar === 'tcg' ? '#fff' : '#ffcb05'} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Cartas TCG</span>
         </button>
 
         <button
@@ -429,21 +433,25 @@ export default function ProductCatalog({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px',
+            gap: '6px',
             backgroundColor: mainPillar === 'videogames' ? '#2563eb' : 'rgba(255, 255, 255, 0.04)',
             color: '#ffffff',
             border: mainPillar === 'videogames' ? '1px solid #3b82f6' : '1px solid var(--border-color)',
-            padding: '12px 18px',
+            padding: '10px 8px',
             borderRadius: '10px',
-            fontSize: '14px',
+            fontSize: '12.5px',
             fontWeight: 800,
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            minWidth: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             boxShadow: mainPillar === 'videogames' ? '0 4px 14px rgba(37, 99, 235, 0.35)' : 'none'
           }}
         >
-          <Gamepad2 size={16} color={mainPillar === 'videogames' ? '#fff' : '#60a5fa'} />
-          <span>🎮 Videojuegos & Consolas</span>
+          <Gamepad2 size={15} color={mainPillar === 'videogames' ? '#fff' : '#60a5fa'} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Videojuegos</span>
         </button>
 
         <button
@@ -456,21 +464,25 @@ export default function ProductCatalog({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px',
+            gap: '6px',
             backgroundColor: mainPillar === 'accessories' ? '#059669' : 'rgba(255, 255, 255, 0.04)',
             color: '#ffffff',
             border: mainPillar === 'accessories' ? '1px solid #10b981' : '1px solid var(--border-color)',
-            padding: '12px 18px',
+            padding: '10px 8px',
             borderRadius: '10px',
-            fontSize: '14px',
+            fontSize: '12.5px',
             fontWeight: 800,
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            minWidth: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             boxShadow: mainPillar === 'accessories' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none'
           }}
         >
-          <ShieldCheck size={16} color={mainPillar === 'accessories' ? '#fff' : '#34d399'} />
-          <span>🛡️ Accesorios & Protección</span>
+          <ShieldCheck size={15} color={mainPillar === 'accessories' ? '#fff' : '#34d399'} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Accesorios</span>
         </button>
       </div>
 
@@ -481,8 +493,8 @@ export default function ProductCatalog({
         display: 'flex',
         gap: '8px',
         overflowX: 'auto',
-        paddingBottom: '14px',
-        marginBottom: '20px',
+        paddingBottom: '12px',
+        marginBottom: '16px',
         borderBottom: '1px solid var(--border-color)',
         scrollbarWidth: 'none'
       }}>
@@ -495,11 +507,13 @@ export default function ProductCatalog({
                 backgroundColor: tcgFormat === 'all' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
                 color: '#fff',
                 border: tcgFormat === 'all' ? 'none' : '1px solid var(--border-color)',
-                padding: '6px 14px',
+                padding: '7px 14px',
                 borderRadius: '20px',
                 fontSize: '12.5px',
                 fontWeight: tcgFormat === 'all' ? 700 : 500,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
               Todo TCG
@@ -510,14 +524,16 @@ export default function ProductCatalog({
                 backgroundColor: tcgFormat === 'sealed' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
                 color: '#fff',
                 border: tcgFormat === 'sealed' ? 'none' : '1px solid var(--border-color)',
-                padding: '6px 14px',
+                padding: '7px 14px',
                 borderRadius: '20px',
                 fontSize: '12.5px',
                 fontWeight: tcgFormat === 'sealed' ? 700 : 500,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
-              📦 Producto Sellado (Booster Boxes / ETBs / Blisters)
+              📦 Producto Sellado
             </button>
             <button
               onClick={() => setTcgFormat('single')}
@@ -525,14 +541,16 @@ export default function ProductCatalog({
                 backgroundColor: tcgFormat === 'single' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
                 color: '#fff',
                 border: tcgFormat === 'single' ? 'none' : '1px solid var(--border-color)',
-                padding: '6px 14px',
+                padding: '7px 14px',
                 borderRadius: '20px',
                 fontSize: '12.5px',
                 fontWeight: tcgFormat === 'single' ? 700 : 500,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
-              🃏 Cartas Sueltas (Singles)
+              🃏 Cartas Sueltas
             </button>
           </>
         )}
@@ -656,8 +674,8 @@ export default function ProductCatalog({
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr',
-        gap: '30px',
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gap: '24px',
       }} className="catalog-layout">
         {/* ============================================================== */}
         {/* FILTROS SIDEBAR / TOPBAR CONTEXTUALES */}
@@ -1119,7 +1137,7 @@ export default function ProductCatalog({
         {/* ============================================================== */}
         {/* LISTADO DE PRODUCTOS O ESTADO VACÍO ELEGANTE */}
         {/* ============================================================== */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           {filteredProducts.length === 0 ? (
             /* Resultados Vacíos Amigables y Claros */
             <div style={{
@@ -1181,7 +1199,7 @@ export default function ProductCatalog({
             /* Grilla de productos */
             <div className="products-grid">
               {filteredProducts.map((product) => (
-                <div key={product.id} className="animate-fade-in-up">
+                <div key={product.id} className="animate-fade-in-up" style={{ minWidth: 0 }}>
                   <ProductItem
                     product={product}
                     onAddToCart={onAddToCart}
@@ -1197,13 +1215,9 @@ export default function ProductCatalog({
       </div>
 
       <style>{`
-        @keyframes pulse {
-          0% { opacity: 0.3; }
-          100% { opacity: 0.7; }
-        }
         @media (min-width: 992px) {
           .catalog-layout {
-            grid-template-columns: 260px 1fr !important;
+            grid-template-columns: 260px minmax(0, 1fr) !important;
           }
         }
       `}</style>

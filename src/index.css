@@ -338,13 +338,18 @@ a {
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 30px;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
 }
 
 @media (max-width: 640px) {
   .products-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .product-card-hover {
+    padding: 10px !important;
   }
 }
 
@@ -412,6 +417,11 @@ a {
 
 /* Regla Anti-Zoom de iOS Safari: Mínimo 16px en todos los inputs */
 @media screen and (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   input, select, textarea {
     font-size: 16px !important;
   }

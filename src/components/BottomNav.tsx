@@ -32,14 +32,17 @@ export default function BottomNav({
         bottom: 0,
         left: 0,
         right: 0,
+        width: '100%',
+        maxWidth: '100vw',
+        boxSizing: 'border-box',
         height: '62px',
-        backgroundColor: 'rgba(10, 13, 20, 0.95)',
+        backgroundColor: 'rgba(10, 13, 20, 0.96)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderTop: '1px solid rgba(255, 255, 255, 0.1)',
         display: 'none', // Se activa con @media (max-width: 768px) en index.css
         alignItems: 'center',
-        justifyContent: 'space-around',
+        justifyContent: 'space-between',
         zIndex: 990,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.6)'
@@ -58,8 +61,9 @@ export default function BottomNav({
           justifyContent: 'center',
           gap: '3px',
           cursor: 'pointer',
-          padding: '6px 12px',
-          minWidth: '54px',
+          padding: '6px 2px',
+          flex: 1,
+          minWidth: 0,
           minHeight: '44px'
         }}
       >
@@ -82,8 +86,9 @@ export default function BottomNav({
           justifyContent: 'center',
           gap: '3px',
           cursor: 'pointer',
-          padding: '6px 12px',
-          minWidth: '54px',
+          padding: '6px 2px',
+          flex: 1,
+          minWidth: 0,
           minHeight: '44px'
         }}
       >
@@ -106,8 +111,9 @@ export default function BottomNav({
           justifyContent: 'center',
           gap: '3px',
           cursor: 'pointer',
-          padding: '6px 12px',
-          minWidth: '54px',
+          padding: '6px 2px',
+          flex: 1,
+          minWidth: 0,
           minHeight: '44px'
         }}
       >
@@ -130,8 +136,9 @@ export default function BottomNav({
           justifyContent: 'center',
           gap: '3px',
           cursor: 'pointer',
-          padding: '6px 12px',
-          minWidth: '54px',
+          padding: '6px 2px',
+          flex: 1,
+          minWidth: 0,
           minHeight: '44px',
           position: 'relative'
         }}
@@ -177,8 +184,9 @@ export default function BottomNav({
           justifyContent: 'center',
           gap: '3px',
           cursor: 'pointer',
-          padding: '6px 12px',
-          minWidth: '54px',
+          padding: '6px 2px',
+          flex: 1,
+          minWidth: 0,
           minHeight: '44px'
         }}
       >

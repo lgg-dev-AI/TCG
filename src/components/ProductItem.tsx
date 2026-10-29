@@ -67,6 +67,8 @@ export default function ProductItem({
             ? '1px solid rgba(255, 203, 5, 0.45)' 
             : '1px solid var(--border-color)',
         height: '100%',
+        minWidth: 0,
+        overflow: 'hidden',
         justifyContent: 'space-between',
         position: 'relative',
         transform: isHovered ? 'translateY(-5px)' : 'translateY(0)',
@@ -447,7 +449,7 @@ export default function ProductItem({
         </div>
 
         {/* Precio e Interacciones */}
-        <div style={{ marginTop: '12px' }}>
+        <div style={{ marginTop: '10px', minWidth: 0 }}>
           {/* Fila de precio e inventario */}
           {(() => {
             const tcgMarketUsd = product.pokemonCardData?.tcgplayer?.prices?.holofoil?.market || product.pokemonCardData?.tcgplayer?.prices?.normal?.market;
@@ -459,79 +461,94 @@ export default function ProductItem({
             return (
               <div style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                flexDirection: 'column',
+                gap: '2px',
                 marginBottom: '10px'
               }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--secondary)' }}>
-                      ${product.price.toLocaleString('es-MX')} MXN
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '4px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '17px', fontWeight: 800, color: 'var(--secondary)' }}>
+                      ${product.price.toLocaleString('es-MX')}
                     </span>
-                    {savingsPercent && savingsPercent >= 5 && (
-                      <span style={{
-                        fontSize: '9.5px',
-                        padding: '2px 5px',
-                        borderRadius: '4px',
-                        backgroundColor: 'rgba(16, 185, 129, 0.15)',
-                        color: '#34d399',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
-                        fontWeight: 800
-                      }}>
-                        🔥 -{savingsPercent}%
-                      </span>
-                    )}
+                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--secondary)', opacity: 0.85 }}>
+                      MXN
+                    </span>
                   </div>
-                  {effectiveMarketMxn && (
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '1px' }}>
-                      Mkt: ${effectiveMarketMxn.toLocaleString('es-MX')} MXN
+                  {savingsPercent && savingsPercent >= 5 && (
+                    <span style={{
+                      fontSize: '9px',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      fontWeight: 800,
+                      whiteSpace: 'nowrap'
+                    }}>
+                      🔥 -{savingsPercent}%
                     </span>
                   )}
                 </div>
-                <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                  {effectiveMarketMxn ? (
+                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      Mkt: ${effectiveMarketMxn.toLocaleString('es-MX')}
+                    </span>
+                  ) : <span />}
                   {product.stock === 0 ? (
-                    <span style={{ fontSize: '11px', color: '#ff6b6b', fontWeight: 700 }}>Agotado</span>
-                  ) : product.stock <= 3 ? (
-                    <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>
-                      ⚡ {product.stock} {product.stock === 1 ? 'última pieza' : 'últimas piezas'}
+                    <span style={{ fontSize: '10px', color: '#ff6b6b', fontWeight: 700, whiteSpace: 'nowrap' }}>Agotado</span>
+                  ) : product.stock > 3 ? (
+                    <span style={{ fontSize: '10px', color: '#1ba24c', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {product.stock} disp.
                     </span>
-                  ) : (
-                    <span style={{ fontSize: '11px', color: '#1ba24c', fontWeight: 600 }}>
-                      {product.stock} disponibles
-                    </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );
           })()}
 
-          {/* Botones de acción */}
-          <div style={{ display: 'flex', gap: '8px' }}>
+          {/* Botones de acción optimizados sin desborde */}
+          <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
             <button 
-              onClick={() => onViewDetails(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(product);
+              }}
               className="btn btn-secondary"
               style={{
-                flexGrow: 1,
-                padding: '8px 10px',
-                fontSize: '12px'
+                width: '38px',
+                minWidth: '38px',
+                padding: '0',
+                fontSize: '12px',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
               title="Ver Detalles"
+              aria-label="Ver Detalles"
             >
-              <Eye size={14} /> Detalles
+              <Eye size={15} />
             </button>
             <button 
-              onClick={() => onAddToCart(product)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCart(product);
+              }}
               disabled={product.stock === 0}
               className="btn btn-primary"
               style={{
-                flexGrow: 2,
-                padding: '8px 12px',
+                flex: 1,
+                minWidth: 0,
+                padding: '8px 10px',
                 fontSize: '12px',
+                whiteSpace: 'nowrap',
                 opacity: product.stock === 0 ? 0.5 : 1,
                 cursor: product.stock === 0 ? 'not-allowed' : 'pointer'
               }}
             >
-              <ShoppingCart size={14} /> Agregar
+              <ShoppingCart size={14} style={{ flexShrink: 0 }} />
+              <span>{product.stock === 0 ? 'Agotado' : 'Agregar'}</span>
             </button>
           </div>
         </div>
